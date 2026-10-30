@@ -40,4 +40,19 @@ Desktop console presentation is a dedicated view-only window initially;
 embedding is optional later. Web deployments run that worker on a private display
 and expose a browser-compatible stream (for example a framebuffer bridge over
 WebSocket). Do not expose the Java protocol, device cookies, or legacy TLS to
-the browser. The browser bridge and modern manager are not implemented yet.
+the browser. The browser bridge is not implemented yet. A modern Java desktop manager now
+uses the shared Python read-only bridge for status and profile selection.
+
+
+## Implemented desktop management boundary
+
+The Java manager passes a selected device's credentials to a local Python bridge
+through stdin. The bridge owns its web session and exposes only catalogued read
+operations. It returns normalized rows with secrets omitted, not device HTML or
+session cookies. Selection closes the previous bridge; responses are tagged by a
+connection generation so stale results cannot populate the new device's tables.
+The KVM worker is separate and has its own bounded cleanup path.
+
+The desktop profile store separates non-secret addresses/usernames from an
+AES-GCM credential vault unlocked by the user. Saving a password is optional.
+All hardware-changing controls remain disabled and have no backend write route.

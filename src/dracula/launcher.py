@@ -138,7 +138,7 @@ def setup_java():
     return java
 
 
-def main():
+def main(argv=None, credentials=None):
     p=argparse.ArgumentParser(description='DRAC 5 console, enforced view-only; Linux x86 portable Java 8')
     p.add_argument('host', nargs='?')
     p.add_argument('--user', default='root')
@@ -147,7 +147,7 @@ def main():
     p.add_argument('--setup', action='store_true', help='Download and verify private 32-bit Java 8 only')
     p.add_argument('--inspect', action='store_true', help='Read KVM configuration without allocating a console ticket')
     p.add_argument('--seconds', type=int, default=0, help='Close automatically after this many seconds (0: until window closes)')
-    args=p.parse_args()
+    args=p.parse_args(argv)
     if args.seconds < 0 or args.seconds > 86400:
         p.error('--seconds must be between 0 and 86400')
     os.umask(0o077)
@@ -161,7 +161,10 @@ def main():
     if not args.inspect and not java.exists():
         p.error('Run with --setup first')
     device=Device(args.host)
-    password=getpass.getpass('DRAC password: ')
+    if credentials is not None:
+        args.user,password=credentials
+    else:
+        password=getpass.getpass('DRAC password: ')
     ticket=''
     try:
         device.login(args.user,password)

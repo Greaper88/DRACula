@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+DRACULA_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+DRACULA_BUILD_NEEDED=0
+if [ ! -f "$DRACULA_ROOT/.local/desktop/dracula-manager.jar" ]; then
+  DRACULA_BUILD_NEEDED=1
+else
+  for DRACULA_SOURCE in "$DRACULA_ROOT"/apps/desktop/java/dracula/*.java; do
+    if [ "$DRACULA_SOURCE" -nt "$DRACULA_ROOT/.local/desktop/dracula-manager.jar" ]; then DRACULA_BUILD_NEEDED=1; fi
+  done
+fi
+if [ "$DRACULA_BUILD_NEEDED" -eq 1 ]; then "$DRACULA_ROOT/apps/desktop/build.sh"; fi
+exec java -Ddracula.root="$DRACULA_ROOT" -Djava.util.prefs.userRoot="$DRACULA_ROOT/.local/preferences" -jar "$DRACULA_ROOT/.local/desktop/dracula-manager.jar"

@@ -10,8 +10,8 @@ Remaining work:
 
 1. Improve console status and window sizing, then finish release packaging.
 2. Finish portable runtime/native dependency packaging and Windows/macOS profiles.
-3. Add the modern Java manager that starts the isolated legacy worker and opens
-   a console dialog. Host Java may be used if compatible, with a bundled fallback.
+3. Refine the modern Java manager now implemented with device selection, encrypted
+   credentials, 28 read-only tabs and KVM launch. Add bundled-modern-runtime fallback.
 4. Add the server-side private display and authenticated browser stream.
 5. Extend status reads with IPMI where already enabled.
 6. Test any mutation support only after explicit approval, eventually on .252.
