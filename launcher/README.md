@@ -56,9 +56,10 @@ need additional compatible 32-bit libraries; automatic bundling is unfinished.
 - Input-blocking self-test passes before any live console connection.
 - .253 web authentication, JNLP retrieval, console authentication and video
   resolution negotiation succeed with the private SSLv3 profile.
-- The vendor video window displays **No Signal**. The expected Linux login prompt
-  has not yet been verified. This may reflect a blanked local video output;
-  the cause is not established. No input was sent to wake it.
+- Initial **No Signal** was CentOS display blanking. After the owner explicitly
+  authorized a one-time NumLock cycle, a temporary diagnostic sent exactly two
+  NumLock press/release pairs. The Linux login prompt then rendered correctly.
+  The normal launcher remains view-only and does not auto-wake the display.
 - .254 is powered off per the owner; .252 remains offline.
 - Logout responses were not consistently confirmed. The console shutdown hook
   closes its own socket/session, and temporary credentials are deleted locally.

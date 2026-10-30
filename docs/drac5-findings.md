@@ -77,3 +77,14 @@ A shutdown hook closes its own console session. No settings, firmware, power
 operations, virtual media, or remote keyboard/mouse actions were performed.
 
 See [launcher instructions](../launcher/README.md) for limitations and commands.
+
+
+## Video verification after authorized wake
+
+The owner confirmed CentOS blanks its display and explicitly directed a NumLock
+cycle. A temporary diagnostic bypassed the normal input no-op only for exactly
+two NumLock press/release pairs, restoring the prior toggle parity. No other key
+or mouse events were sent. After waiting for video to resume, the .253 Linux
+login prompt was visually verified in the private display. Authentication and
+video rendering are therefore confirmed on this device. The normal committed
+launcher remains view-only; the one-time wake helper is not part of its source.
