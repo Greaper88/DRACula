@@ -28,3 +28,16 @@ inference must report provenance and freshness. No assumption of Redfish support
 Future mutation operations need a separate server-side authorization path, target
 identity, explicit approval, audit trail and operation-specific validation.
 Firmware and power controls remain unimplemented during read-only bring-up.
+
+## Runtime separation and presentation
+
+Preferred desktop direction: a modern Java manager (a compatible host JVM, with
+an optional bundled modern runtime) spawning a private 32-bit Java 8 console
+worker. A bootstrap launcher can later retrieve verified application JARs and
+runtimes. Python currently supplies bring-up tooling, not the final desktop UI.
+
+Desktop console presentation is a dedicated view-only window initially;
+embedding is optional later. Web deployments run that worker on a private display
+and expose a browser-compatible stream (for example a framebuffer bridge over
+WebSocket). Do not expose the Java protocol, device cookies, or legacy TLS to
+the browser. The browser bridge and modern manager are not implemented yet.

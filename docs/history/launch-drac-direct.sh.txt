@@ -1,0 +1,187 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RUNTIME_DIR="$BASE_DIR/runtime"
+WORK_DIR="$BASE_DIR/work"
+CACHE_DIR="$HOME/.cache/icedtea-web/cache"
+DOWNLOADS_DIR="$HOME/Downloads"
+mkdir -p "$WORK_DIR" "$WORK_DIR/native"
+
+usage() {
+  cat <<USAGE
+Usage:
+  $0 [path/to/file.jnlp]
+
+Behavior:
+  - If a JNLP path is provided, use it.
+  - Otherwise, auto-detect the newest .jnlp file in ~/Downloads.
+  - Parse the DRAC JNLP for codebase, main class, arguments, and jar names.
+  - Reuse the cached DRAC jars from ~/.cache/icedtea-web/cache.
+  - Extract the Linux native library if needed.
+  - Launch the DRAC viewer directly, bypassing javaws.
+USAGE
+}
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+pick_java() {
+  local candidate
+  for candidate in \
+    "$RUNTIME_DIR/jre32/bin/java" \
+    "$RUNTIME_DIR/jre/bin/java"; do
+    if [[ -x "$candidate" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+JAVA_BIN="$(pick_java || true)"
+if [[ -z "$JAVA_BIN" ]]; then
+  echo "No bundled Java runtime found. Expected one of:" >&2
+  echo "  $RUNTIME_DIR/jre32/bin/java" >&2
+  echo "  $RUNTIME_DIR/jre/bin/java" >&2
+  exit 1
+fi
+
+if [[ $# -gt 1 ]]; then
+  usage >&2
+  exit 1
+fi
+
+JNLP_SOURCE="${1:-}"
+if [[ -z "$JNLP_SOURCE" ]]; then
+  JNLP_SOURCE="$(find "$DOWNLOADS_DIR" -maxdepth 1 -type f -iname '*.jnlp' -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n1 | cut -d' ' -f2- || true)"
+fi
+
+if [[ -z "$JNLP_SOURCE" || ! -f "$JNLP_SOURCE" ]]; then
+  echo "No JNLP file found. Pass one explicitly or place one in ~/Downloads." >&2
+  exit 1
+fi
+
+PATCHED_JNLP="$WORK_DIR/$(basename "$JNLP_SOURCE")"
+cp -f "$JNLP_SOURCE" "$PATCHED_JNLP"
+
+PARSED_ENV="$WORK_DIR/jnlp.env"
+python3 - "$PATCHED_JNLP" "$PARSED_ENV" <<'PY'
+import re
+import sys
+from pathlib import Path
+import xml.etree.ElementTree as ET
+
+jnlp_path = Path(sys.argv[1])
+out_path = Path(sys.argv[2])
+text = jnlp_path.read_text(encoding='utf-8', errors='ignore')
+
+# The DRAC JNLP is malformed by modern standards but parseable enough after stripping the default namespace.
+text_for_xml = re.sub(r'\sxmlns="[^"]+"', '', text, count=1)
+root = ET.fromstring(text_for_xml)
+
+codebase = root.attrib.get('codebase', '')
+main_class = ''
+app_desc = root.find('application-desc')
+if app_desc is not None:
+    main_class = app_desc.attrib.get('main-class', '')
+    args = [arg.text or '' for arg in app_desc.findall('argument')]
+else:
+    args = []
+
+viewer_jar = ''
+linux_native_jar = ''
+for res in root.findall('resources'):
+    os_name = res.attrib.get('os', '')
+    jar = res.find('jar')
+    nativelib = res.find('nativelib')
+    if jar is not None and jar.attrib.get('href'):
+        viewer_jar = jar.attrib['href']
+    if os_name.lower() == 'linux' and nativelib is not None and nativelib.attrib.get('href'):
+        linux_native_jar = nativelib.attrib['href']
+
+with out_path.open('w', encoding='utf-8') as f:
+    def emit(key, value):
+        safe = value.replace('\\', '\\\\').replace('"', '\\"')
+        f.write(f'{key}="{safe}"\n')
+    emit('CODEBASE', codebase)
+    emit('MAIN_CLASS', main_class)
+    emit('VIEWER_JAR_HREF', viewer_jar)
+    emit('NATIVE_JAR_HREF', linux_native_jar)
+    for i, arg in enumerate(args, 1):
+        emit(f'ARG_{i}', arg)
+    emit('ARG_COUNT', str(len(args)))
+PY
+
+# shellcheck disable=SC1090
+source "$PARSED_ENV"
+
+if [[ -z "${MAIN_CLASS:-}" || -z "${VIEWER_JAR_HREF:-}" || -z "${NATIVE_JAR_HREF:-}" ]]; then
+  echo "Failed to parse required values from JNLP: $PATCHED_JNLP" >&2
+  exit 1
+fi
+
+find_cached_jar() {
+  local basename="$1"
+  find "$CACHE_DIR" -type f -name "$basename" -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n1 | cut -d' ' -f2-
+}
+
+VIEWER_JAR_PATH="$(find_cached_jar "$(basename "$VIEWER_JAR_HREF")")"
+NATIVE_JAR_PATH="$(find_cached_jar "$(basename "$NATIVE_JAR_HREF")")"
+
+if [[ -z "$VIEWER_JAR_PATH" || ! -f "$VIEWER_JAR_PATH" ]]; then
+  echo "Cached viewer jar not found for $(basename "$VIEWER_JAR_HREF")." >&2
+  echo "Open the JNLP once with your working flow first so the jar gets cached." >&2
+  exit 1
+fi
+
+if [[ -z "$NATIVE_JAR_PATH" || ! -f "$NATIVE_JAR_PATH" ]]; then
+  echo "Cached native jar not found for $(basename "$NATIVE_JAR_HREF")." >&2
+  echo "Open the JNLP once with your working flow first so the jar gets cached." >&2
+  exit 1
+fi
+
+# Re-extract native bits every run so a newly cached jar replaces stale files.
+rm -rf "$WORK_DIR/native"
+mkdir -p "$WORK_DIR/native"
+python3 - "$NATIVE_JAR_PATH" "$WORK_DIR/native" <<'PY'
+import sys
+import zipfile
+from pathlib import Path
+
+jar_path = Path(sys.argv[1])
+out_dir = Path(sys.argv[2])
+with zipfile.ZipFile(jar_path) as zf:
+    zf.extractall(out_dir)
+print(f"Extracted native jar to {out_dir}")
+PY
+
+if ! find "$WORK_DIR/native" -type f | grep -q 'libavctKVMIO\.so$'; then
+  echo "Native library libavctKVMIO.so not found after extraction." >&2
+  exit 1
+fi
+
+JAVA_CP="$VIEWER_JAR_PATH:$NATIVE_JAR_PATH"
+
+CMD=(
+  "$JAVA_BIN"
+  -Dhttps.protocols=TLSv1,TLSv1.1,TLSv1.2
+  -Djdk.tls.client.protocols=TLSv1,TLSv1.1,TLSv1.2
+  -Djava.library.path="$WORK_DIR/native"
+  -cp "$JAVA_CP"
+  "$MAIN_CLASS"
+)
+
+for ((i=1; i<=ARG_COUNT; i++)); do
+  varname="ARG_${i}"
+  CMD+=("${!varname}")
+done
+
+echo "Using JNLP: $PATCHED_JNLP"
+echo "Using Java: $JAVA_BIN"
+echo "Using viewer jar: $VIEWER_JAR_PATH"
+echo "Using native jar: $NATIVE_JAR_PATH"
+
+exec "${CMD[@]}"

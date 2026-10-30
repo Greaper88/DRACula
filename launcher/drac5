@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+DRACULA_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+export PYTHONPATH="$DRACULA_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
+exec python3 -m dracula.launcher "$@"

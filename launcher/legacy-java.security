@@ -1,0 +1,4 @@
+# DRAC 5 viewer process only. Never apply this to the manager or web server.
+# DRAC 5 uses SSLv3 and legacy ciphers during KVM authentication.
+jdk.tls.disabledAlgorithms=
+jdk.certpath.disabledAlgorithms=
