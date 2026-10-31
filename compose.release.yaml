@@ -1,6 +1,6 @@
 services:
   dracula:
-    image: ghcr.io/greaper88/dracula:0.1.1
+    image: ghcr.io/greaper88/dracula:0.1.2
     platform: linux/amd64
     init: true
     ports:

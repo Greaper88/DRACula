@@ -5,7 +5,7 @@ core where practical, and hide capabilities a controller does not support.
 
 ## Getting started
 
-Use Python 3.12+, JDK 17+, and Node.js 22.8+ for development checks:
+Use Python 3.12+, JDK 17+, and Node.js 24+ for development checks:
 
 ```sh
 python3 -m venv .venv

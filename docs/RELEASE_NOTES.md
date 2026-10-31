@@ -1,7 +1,7 @@
 First public preview of DRACula: shared desktop and web management for DRAC 5 and IPMI controllers.
 
-- Docker image: `ghcr.io/greaper88/dracula:0.1.1` (Linux AMD64, Java downloaded on first launch).
-- `DRACula-0.1.1.jar`: single executable desktop JAR for Java 17+. Double-click where your OS associates JARs with Java, or run `java -jar DRACula-0.1.1.jar`. It extracts its support code and downloads a checksum-pinned private Python backend. No checkout or separate Python install is required.
+- Docker image: `ghcr.io/greaper88/dracula:0.1.2` (Linux AMD64, Java downloaded on first launch).
+- `DRACula-0.1.2.jar`: single executable desktop JAR for Java 17+. Double-click where your OS associates JARs with Java, or run `java -jar DRACula-0.1.2.jar`. It extracts its support code and downloads a checksum-pinned private Python backend. No checkout or separate Python install is required.
 - Source archive and SHA-256 checksums are attached.
 - Apache 2.0 licensing, notices, contributing instructions and required AI disclosure.
 

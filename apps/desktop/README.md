@@ -7,12 +7,12 @@ installed separately.
 
 ## Download and launch
 
-Download [DRACula-0.1.1.jar](https://github.com/Greaper88/DRACula/releases/download/v0.1.1/DRACula-0.1.1.jar)
-from the [release page](https://github.com/Greaper88/DRACula/releases/tag/v0.1.1).
+Download [DRACula-0.1.2.jar](https://github.com/Greaper88/DRACula/releases/download/v0.1.2/DRACula-0.1.2.jar)
+from the [release page](https://github.com/Greaper88/DRACula/releases/tag/v0.1.2).
 Double-click it if JAR files are associated with Java, or run:
 
 ```sh
-java -jar DRACula-0.1.1.jar
+java -jar DRACula-0.1.2.jar
 ```
 
 First setup requires HTTPS access to GitHub's official standalone-Python release.
@@ -68,7 +68,7 @@ Commons dependencies from Maven Central. Build with:
 ./apps/desktop/build.sh
 ```
 
-The output is `dist/DRACula-0.1.1.jar`. It embeds Java dependencies with their
+The output is `dist/DRACula-0.1.2.jar`. It embeds Java dependencies with their
 upstream notices, shared Python source and launcher support files, with no device
 credentials, runtime binaries or Dell viewer.
 

@@ -1,4 +1,4 @@
-# Release validation — 0.1.1 preview
+# Release validation — 0.1.2 preview
 
 Prepared October 31, 2026 (America/Chicago). This release pass used offline
 fixtures and isolated local containers/displays. No management-controller request
@@ -7,7 +7,7 @@ dashboard login configuration was preserved.
 
 ## Reproduce the automated checks
 
-Requirements: Python 3.12+, JDK 17+ and Node.js 22.8+. Build dependencies download
+Requirements: Python 3.12+, JDK 17+ and Node.js 24+. Build dependencies download
 from pinned Maven Central artifacts on first build; no hardware is used.
 
 ```sh
@@ -25,7 +25,7 @@ HTTP isolation and bootstrap archive/path/link safety.
 ```sh
 ./apps/desktop/build.sh
 java -Djava.awt.headless=true -Ddracula.home=/tmp/dracula-clean-check \
-  -jar dist/DRACula-0.1.1.jar --prepare-only
+  -jar dist/DRACula-0.1.2.jar --prepare-only
 python3 scripts/build-release.py
 ```
 
@@ -40,7 +40,7 @@ contains Apache/dependency notices and no Java, Python or vendor runtime binarie
 
 ```sh
 docker build --platform linux/amd64 -f apps/web/Dockerfile \
-  --build-arg BUNDLE_JAVA=false -t ghcr.io/greaper88/dracula:0.1.1 .
+  --build-arg BUNDLE_JAVA=false -t ghcr.io/greaper88/dracula:0.1.2 .
 docker compose -f compose.release.yaml config --quiet
 ```
 
@@ -84,3 +84,7 @@ remain unverified. Generated JPEG frames from 640×504 through 1600×1224, inclu
 viewer chrome, passed through the production authenticated stream and refitted
 in both directions without reconnecting or stretching. Windows/macOS/ARM hardware,
 additional viewer fingerprints and standalone IPMI helpers need further work.
+
+The separate portable-smoke workflow can prepare the published JAR without a
+checkout on Linux, Windows and macOS hosted runners. This checks runtime startup,
+not remote hardware or vendor KVM compatibility.

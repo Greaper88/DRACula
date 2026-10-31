@@ -10,7 +10,7 @@ for command in "$PYTHON_BIN" "$NODE_BIN" java javac jar; do
   command -v "$command" >/dev/null || { printf 'Missing development tool: %s\n' "$command" >&2; exit 1; }
 done
 "$PYTHON_BIN" -c 'import sys; assert sys.version_info >= (3,12), "Python 3.12+ required"; import cryptography, fastapi, httpx, PIL, Xlib'
-"$NODE_BIN" -e 'if((v=>v[0]<22||(v[0]===22&&v[1]<8))(process.versions.node.split(".").map(Number)))throw Error("Node.js 22.8+ required for the checks")'
+"$NODE_BIN" -e 'if(Number(process.versions.node.split(".")[0])<24)throw Error("Node.js 24+ required for the checks")'
 export PYTHONPATH="$DRACULA_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 "$PYTHON_BIN" -m unittest discover -s tests -v
 "$NODE_BIN" --test --test-isolation=none tests/web_*.test.cjs

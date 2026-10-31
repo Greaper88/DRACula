@@ -3,7 +3,7 @@
 A desktop and web manager for homelab management controllers, starting with Dell
 DRAC 5 and standard IPMI. Both apps use the same Python management core.
 
-**0.1.1 is an early public preview.** Docker supports Linux AMD64. The desktop
+**0.1.2 is an early public preview.** Docker supports Linux AMD64. The desktop
 ships as one executable JAR with automatic backend setup; hardware validation
 currently covers Linux x86-64.
 
@@ -24,13 +24,13 @@ virtual-media mounting, log clearing and controller resets are not implemented.
 
 ## Web app: published Docker image
 
-Image: **`ghcr.io/greaper88/dracula:0.1.1`** ([package](https://github.com/Greaper88/DRACula/pkgs/container/dracula)).
+Image: **`ghcr.io/greaper88/dracula:0.1.2`** ([package](https://github.com/Greaper88/DRACula/pkgs/container/dracula)).
 Linux AMD64 is supported. Copy this into `compose.yaml`:
 
 ```yaml
 services:
   dracula:
-    image: ghcr.io/greaper88/dracula:0.1.1
+    image: ghcr.io/greaper88/dracula:0.1.2
     platform: linux/amd64
     init: true
     ports:
@@ -72,13 +72,13 @@ A saved profile never connects automatically.
 
 ## Desktop app: one executable JAR
 
-Download **[DRACula-0.1.1.jar](https://github.com/Greaper88/DRACula/releases/download/v0.1.1/DRACula-0.1.1.jar)**
-from [Releases](https://github.com/Greaper88/DRACula/releases/tag/v0.1.1).
+Download **[DRACula-0.1.2.jar](https://github.com/Greaper88/DRACula/releases/download/v0.1.2/DRACula-0.1.2.jar)**
+from [Releases](https://github.com/Greaper88/DRACula/releases/tag/v0.1.2).
 Install Java 17 or newer, then double-click the JAR where your OS associates JAR
 files with Java. The equivalent command is:
 
 ```sh
-java -jar DRACula-0.1.1.jar
+java -jar DRACula-0.1.2.jar
 ```
 
 No source checkout or separate Python installation is needed. First launch
@@ -115,7 +115,7 @@ python3 -m venv .venv
 PYTHON_BIN=.venv/bin/python ./scripts/check.sh
 ```
 
-The checks use synthetic devices, require JDK 17+ and Node.js 22.8+, and do not
+The checks use synthetic devices, require JDK 17+ and Node.js 24+, and do not
 contact hardware. Node is a development dependency only; neither app requires a
 Node server. See [release validation](docs/release-validation.md) for build checks
 and [runtime notices](apps/web/THIRD_PARTY.md) for third-party distribution details.
