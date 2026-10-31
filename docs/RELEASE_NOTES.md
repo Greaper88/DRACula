@@ -10,3 +10,8 @@ Fresh installs start with no controllers or device credentials. Settings and pow
 The portable launcher selects Windows, macOS or Linux runtimes on x64/ARM64. Linux x86-64 is verified here; Windows/macOS/ARM device access remains unverified. Legacy DRAC 5 KVM is currently enabled only on verified Linux x86-64 and still needs compatible 32-bit system libraries. IPMI requires `ipmitool` on the desktop; Docker includes it. Firmware flashing, virtual media, Redfish and SOL are future work.
 
 See README for the copyable Compose configuration and first-run password setup. No default dashboard password is included. Consult SECURITY.md before LAN deployment.
+
+Publication verification: the image pulls anonymously; both release assets match
+their published SHA-256 checksums. The published JAR backend setup passed on
+Windows, macOS and Linux in [the portable smoke workflow](https://github.com/Greaper88/DRACula/actions/runs/41194739850).
+These checks do not claim non-Linux hardware/KVM compatibility.

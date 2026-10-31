@@ -28,6 +28,10 @@ JAR file association before double-clicking will launch Java.
 | Windows x64 / ARM64 | Runtime selected; hardware unverified | Hidden in this preview |
 | macOS Intel / Apple Silicon | Runtime selected; hardware unverified | Hidden in this preview |
 
+Published-JAR backend setup passed on Windows, macOS and Linux hosted runners.
+This confirms setup/runtime startup; hardware access and vendor KVM compatibility
+on non-Linux systems remain unverified.
+
 DRAC HTTP uses a private stdlib transport without requiring curl. Desktop IPMI
 still needs `ipmitool` on PATH. The Docker app includes its IPMI and KVM libraries.
 Support for a Java runtime on an OS does not by itself validate the legacy vendor

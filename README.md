@@ -83,8 +83,9 @@ java -jar DRACula-0.1.2.jar
 
 No source checkout or separate Python installation is needed. First launch
 extracts the shared core and downloads a checksum-pinned private Python backend.
-The launcher selects Windows, macOS or Linux on x64/ARM64; Linux x86-64 is verified
-here. Windows/macOS/ARM hardware access remains unverified. Profiles live in the
+The launcher selects Windows, macOS or Linux on x64/ARM64. Published-JAR backend
+setup passed on Windows, macOS and Linux hosted runners. Hardware access outside
+Linux x86-64 remains unverified. Profiles live in the
 OS's per-user app data directory, rather than inside the JAR.
 
 Legacy DRAC 5 KVM currently runs only on verified Linux x86-64 and needs compatible

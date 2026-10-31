@@ -88,3 +88,8 @@ additional viewer fingerprints and standalone IPMI helpers need further work.
 The separate portable-smoke workflow can prepare the published JAR without a
 checkout on Linux, Windows and macOS hosted runners. This checks runtime startup,
 not remote hardware or vendor KVM compatibility.
+
+Public v0.1.2 verification completed: anonymous GHCR pull, matching JAR/source
+checksums, and successful private-backend setup using the published JAR on
+Windows, macOS and Linux hosted runners. The release workflow and separate
+portable-smoke workflow both passed.
