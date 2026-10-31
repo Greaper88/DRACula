@@ -6,6 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "dracula-management"
 version = "0.1.0"
 description = "Shared management core for legacy Dell remote access controllers"
+license = {file = "LICENSE"}
+readme = "README.md"
 requires-python = ">=3.12"
 
 [project.scripts]

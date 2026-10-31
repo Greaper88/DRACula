@@ -1,3 +1,5 @@
+# Copyright 2026 DRACula contributors
+# SPDX-License-Identifier: Apache-2.0
 import unittest
 from unittest.mock import patch
 from dracula.status import status_rows,StatusDevice,PAGES,fetch_page
@@ -24,7 +26,7 @@ class StatusTests(unittest.TestCase):
     def test_mutation_post_rejected_on_status_device(self):
         from dracula.launcher import CACHE
         CACHE.mkdir(exist_ok=True)
-        d=StatusDevice('192.168.1.253')
+        d=StatusDevice('192.0.2.253')
         try:
             with patch('subprocess.run') as run:
                 with self.assertRaises(ValueError):d.request('/cgi-bin/webcgi/power',b'action=reset')

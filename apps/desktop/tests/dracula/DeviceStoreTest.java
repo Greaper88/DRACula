@@ -1,3 +1,5 @@
+// Copyright 2026 DRACula contributors
+// SPDX-License-Identifier: Apache-2.0
 package dracula;
 import java.nio.file.*;
 import java.nio.charset.StandardCharsets;
@@ -7,8 +9,9 @@ public final class DeviceStoreTest {
  public static void main(String[] args)throws Exception {
   Path root=Files.createTempDirectory("dracula-vault-test-");
   try {
-   String host="192.168.1.10", password="synthetic-device-secret";
+   String host="192.0.2.10", password="synthetic-device-secret";
    try(DeviceStore store=new DeviceStore(root)){
+    if(!store.profiles.isEmpty())throw new AssertionError("Fresh install seeded devices");
     store.unlock("synthetic-master".toCharArray());
     store.put(null,new DeviceStore.Profile("Lab",host,"operator",true),password.toCharArray());
    }
@@ -23,13 +26,17 @@ public final class DeviceStoreTest {
     store.unlock("synthetic-master".toCharArray());
     if(!password.equals(new String(store.password(host))))throw new AssertionError("Password did not round-trip");
     if(!store.profiles.get(host).user().equals("operator"))throw new AssertionError("Username lost");
-    store.put(host,new DeviceStore.Profile("Moved","192.168.1.11","newuser",true),store.password(host));
+    store.put(host,new DeviceStore.Profile("Moved","192.0.2.11","newuser",true),store.password(host));
     if(store.password(host).length!=0)throw new AssertionError("Old host credential retained");
    }
    try(DeviceStore store=new DeviceStore(root)){
     store.unlock("synthetic-master".toCharArray());
-    if(!password.equals(new String(store.password("192.168.1.11"))))throw new AssertionError("Moved credential lost");
-    store.remove("192.168.1.11");
+    if(!password.equals(new String(store.password("192.0.2.11"))))throw new AssertionError("Moved credential lost");
+    store.remove("192.0.2.11");
+   }
+   Files.writeString(root.resolve("machines.txt"),"192.0.2.99\n");
+   try(DeviceStore store=new DeviceStore(root)){
+    if(!store.profiles.isEmpty())throw new AssertionError("Removing the last device resurrected default or legacy profiles");
    }
    byte[] tampered=Files.readAllBytes(root.resolve("passwords.vault"));tampered[tampered.length-1]^=1;Files.write(root.resolve("passwords.vault"),tampered);
    try(DeviceStore store=new DeviceStore(root)){

@@ -1,0 +1,33 @@
+services:
+  dracula:
+    image: dracula-web:local
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        BUNDLE_JAVA: ${BUNDLE_JAVA:-false}
+    init: true
+    ports:
+      - "${DRACULA_BIND:-127.0.0.1}:${DRACULA_PORT:-8788}:8080"
+    environment:
+      DRACULA_BLOCKED_HOSTS: ${DRACULA_BLOCKED_HOSTS:-}
+      DRACULA_SECURE_COOKIES: ${DRACULA_SECURE_COOKIES:-0}
+      DRACULA_PUBLIC_ORIGIN: ${DRACULA_PUBLIC_ORIGIN:-}
+    volumes:
+      - dracula-data:/data
+      - dracula-keys:/keys
+      - dracula-cache:/app/.local
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 256
+    mem_limit: 1g
+    cpus: 2
+    restart: unless-stopped
+volumes:
+  dracula-data:
+  dracula-keys:
+  dracula-cache:

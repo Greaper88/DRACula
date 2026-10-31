@@ -1,3 +1,5 @@
+# Copyright 2026 DRACula contributors
+# SPDX-License-Identifier: Apache-2.0
 """Parse DRAC 5 XML without executing its stylesheet or embedded code."""
 from xml.etree import ElementTree as ET
 

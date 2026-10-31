@@ -1,17 +1,25 @@
-# Current milestone
+# Roadmap
 
-The Linux view-only launcher now authenticates to .253 and opens the vendor
-video window using private 32-bit Java and a private SSLv3 compatibility profile.
-The Linux login prompt on .253 is now visually verified. Initial No Signal was
-resolved by the owner-authorized NumLock wake cycle. The normal launcher does not
-send wake input; future wake actions still require authorization.
+## Initial public preview
 
-Remaining work:
+Implemented: shared desktop/web management, empty first-run device lists,
+encrypted saved credentials, DRAC 5 status/configuration tabs, IPMI-only fallback,
+reviewed settings and power actions, automatic KVM recovery, optional console
+input, responsive browser framing, and matching dark/light themes.
 
-1. Improve console status and window sizing, then finish release packaging.
-2. Finish portable runtime/native dependency packaging and Windows/macOS profiles.
-3. Refine the modern Java manager now implemented with device selection, encrypted
-   credentials, 28 read-only tabs and KVM launch. Add bundled-modern-runtime fallback.
-4. Add the server-side private display and authenticated browser stream.
-5. Extend status reads with IPMI where already enabled.
-6. Test any mutation support only after explicit approval, eventually on .252.
+Docker targets Linux AMD64 without Java bundled by default. The desktop ships
+as an executable Java 17+ JAR with automatic private-backend setup. Windows/macOS/ARM
+launcher manifests are included; hardware validation and legacy KVM portability
+remain incomplete. See [release validation](release-validation.md) for test evidence.
+
+## Next work
+
+- Portable desktop packaging, updater and Windows/macOS/ARM validation.
+- Device certificate enrollment/pinning and a fuller deployment security review.
+- Additional reviewed controller/viewer versions and modular vendor adapters.
+- Redfish and IPMI SOL support.
+- Higher-frame-rate browser video if needed.
+- Separately reviewed firmware, virtual media and maintenance workflows.
+
+New hardware behavior and write actions need their own explicit authorization and
+validation. Capability detection should keep unsupported features hidden.

@@ -1,41 +1,133 @@
 # DRACula
 
-Modern management for legacy Dell DRAC controllers, starting with DRAC 5.
+A desktop and web manager for homelab management controllers, starting with Dell
+DRAC 5 and standard IPMI. Both apps use the same Python management core.
 
-## Layout
+**0.1.0 is an early public preview.** Docker supports Linux AMD64. The desktop
+ships as one executable JAR with automatic backend setup; hardware validation
+currently covers Linux x86-64.
 
-- `src/dracula`: shared device models, status parsing and future adapters.
-- `apps/desktop`: modern Java desktop manager with device profiles and DRAC status tabs.
-- `apps/web`: future browser interface and management backend.
-- `docs`: architecture, hardware evidence and KVM investigation.
+## What works
 
-Both products use one shared core on the same development branch. This is an
-early desktop manager and shared read-only device layer. Cross-platform release
-packaging and the web frontend are still in development.
-A Linux view-only console launcher now downloads a private Java runtime and
-opens the fingerprinted Dell viewer; see [launcher instructions](launcher/README.md).
-No hardware-changing commands or browser console bridge are implemented.
+- Multiple saved devices, encrypted credential storage, and capability-based tabs.
+- DRAC 5 status, sensors, logs and supported configuration fields.
+- Local settings drafts with an exact-change review, confirmation and readback.
+- Confirmed power controls, including IPMI fallback and graceful shutdown.
+- Legacy Java KVM in a desktop window or a browser stream, with automatic recovery
+  using saved credentials and a fresh JNLP after a disconnect.
+- Optional keyboard/mouse control, initially off; reconnecting turns input off.
+- Dark and light themes in both apps. The browser console fits the available space.
 
-## Open the desktop manager
+IPMI-only devices show the supported status and power pages. DRAC KVM and vendor
+configuration are hidden when unavailable. Redfish, IPMI SOL, firmware flashing,
+virtual-media mounting, log clearing and controller resets are not implemented.
 
-```sh
-./apps/desktop/dracula
+## Web app: published Docker image
+
+Image: **`ghcr.io/greaper88/dracula:0.1.0`** ([package](https://github.com/Greaper88/DRACula/pkgs/container/dracula)).
+Linux AMD64 is supported. Copy this into `compose.yaml`:
+
+```yaml
+services:
+  dracula:
+    image: ghcr.io/greaper88/dracula:0.1.0
+    platform: linux/amd64
+    init: true
+    ports:
+      - "127.0.0.1:8788:8080"
+    volumes:
+      - dracula-data:/data
+      - dracula-keys:/keys
+      - dracula-cache:/app/.local
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 256
+    mem_limit: 1g
+    cpus: 2
+    restart: unless-stopped
+volumes:
+  dracula-data:
+  dracula-keys:
+  dracula-cache:
 ```
 
-See [desktop instructions](apps/desktop/README.md) for device profiles, encrypted
-password storage, the 28 DRAC tabs, and current dependencies.
-
-## Run the current tooling
-
-Python 3.12 or newer; no runtime dependencies for the initial parser.
+Create your own dashboard password, then start:
 
 ```sh
-PYTHONPATH=src python3 -m dracula.cli /path/to/saved-status.xml
-PYTHONPATH=src python3 -m unittest discover -s tests -v
+docker compose run --rm dracula python3 -m dracula.web_setup
+docker compose up -d
 ```
 
-The parser exports an explicit selection of status fields and rejects login
-responses rather than reporting a successful status. Do not commit raw captures.
+Open [http://localhost:8788](http://localhost:8788). There is **no default password**.
+The first start downloads and verifies a private Java runtime from Azul. Later
+starts reuse the cache. The image contains neither Java nor Dell's viewer.
+See [web setup](apps/web/README.md) for LAN access, persistence and source builds.
 
-See [architecture](docs/architecture.md), [hardware findings](docs/drac5-findings.md)
-and [next steps](docs/roadmap.md).
+Both apps start with an empty device list. Use **Manage devices → Add device**,
+enter the controller's address and credentials, select it, then choose **Connect**.
+A saved profile never connects automatically.
+
+## Desktop app: one executable JAR
+
+Download **[DRACula-0.1.0.jar](https://github.com/Greaper88/DRACula/releases/download/v0.1.0/DRACula-0.1.0.jar)**
+from [Releases](https://github.com/Greaper88/DRACula/releases/tag/v0.1.0).
+Install Java 17 or newer, then double-click the JAR where your OS associates JAR
+files with Java. The equivalent command is:
+
+```sh
+java -jar DRACula-0.1.0.jar
+```
+
+No source checkout or separate Python installation is needed. First launch
+extracts the shared core and downloads a checksum-pinned private Python backend.
+The launcher selects Windows, macOS or Linux on x64/ARM64; Linux x86-64 is verified
+here. Windows/macOS/ARM hardware access remains unverified. Profiles live in the
+OS's per-user app data directory, rather than inside the JAR.
+
+Legacy DRAC 5 KVM currently runs only on verified Linux x86-64 and needs compatible
+32-bit system libraries. Its private Java runtime is downloaded on first console
+use. Desktop IPMI needs `ipmitool` on PATH; Docker includes it. See
+[desktop setup](apps/desktop/README.md) for compatibility and source-build details.
+
+## Management and console behavior
+
+Reading status does not apply settings or send power commands. Supported settings
+are staged locally; **Apply changes…** shows the exact device and proposed changes
+before a separate confirmation. Power actions have their own review. The legacy
+KVM viewer retains its original menus and confirmations.
+
+Console input starts disabled. Enable it explicitly to control a machine;
+**Ctrl+Alt+Shift** releases capture. Closing the console stops its worker and
+reconnect attempts. A healthy KVM connection survives DRAC web-login expiry.
+
+Use a trusted management network. Device-side DRAC 5 compatibility uses obsolete
+TLS and does not verify the controller certificate. It is confined to private
+workers and never applied to browser-facing TLS. See [security notes](SECURITY.md).
+
+## Development and release checks
+
+```sh
+python3 -m venv .venv
+.venv/bin/pip install -r apps/web/requirements-test.txt
+PYTHON_BIN=.venv/bin/python ./scripts/check.sh
+```
+
+The checks use synthetic devices, require JDK 17+ and Node.js 22.8+, and do not
+contact hardware. Node is a development dependency only; neither app requires a
+Node server. See [release validation](docs/release-validation.md) for build checks
+and [runtime notices](apps/web/THIRD_PARTY.md) for third-party distribution details.
+
+- [Architecture](docs/architecture.md)
+- [DRAC 5 field mapping](docs/drac5-fields.md)
+- [Changelog](CHANGELOG.md)
+- [Roadmap](docs/roadmap.md)
+
+## License and contributions
+
+DRACula's original code and documentation use the [Apache License 2.0](LICENSE).
+See [NOTICE](NOTICE), [third-party notices](THIRD_PARTY_NOTICES.md) and
+[contributing guidance](CONTRIBUTING.md). AI-assisted contributions require the
+disclosure format in [AGENTS.md](AGENTS.md).

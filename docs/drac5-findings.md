@@ -1,12 +1,13 @@
 # DRAC 5 hardware investigation
 
-Observed October 29, 2026 (America/Chicago). Authorized read-only access.
+Historical observations from October 29, 2026 (America/Chicago). Lab addresses
+have been removed; controller labels identify test hardware, not shipped profiles.
 
 | Address | Result | Hardware | DRAC firmware | BMC IPMI enabled field |
 | --- | --- | --- | --- | --- |
-| 192.168.1.252 | Offline per owner; HTTPS unreachable | Not queried | Unknown | Unknown |
-| 192.168.1.253 | Authenticated status read | PowerEdge 1950 III, DRAC A00 | 1.65 (12.08.16) | 0 |
-| 192.168.1.254 | Authenticated status read | PowerEdge 1950 III, DRAC A03 | 1.65 (12.08.16) | 1 |
+| Test controller | Offline per owner; HTTPS unreachable | Not queried | Unknown | Unknown |
+| Controller A | Authenticated status read | PowerEdge 1950 III, DRAC A00 | 1.65 (12.08.16) | 0 |
+| Controller B | Authenticated status read | PowerEdge 1950 III, DRAC A03 | 1.65 (12.08.16) | 1 |
 
 Both report BIOS 2.7.0, BMC 2.50 and IPMI 2.0. The Enabled field is an
 interface report, not proof of IPMI reachability; no IPMI commands were sent.
@@ -28,7 +29,7 @@ in this repository. Login necessarily creates authentication/session audit state
 
 Both devices report KVM enabled, keyboard/mouse port 5900, video port 5901,
 EncryptionEnabled=0, PluginType=1, and zero active console sessions at inspection.
-Maximum sessions: .253 reports 2; .254 reports 4. No settings were changed.
+Maximum sessions: Controller A reports 2; Controller B reports 4. No settings were changed.
 
 Static `/cgi/vkvm.xsl` references `/cgi-bin/webcgi/vkvmjnlp?id=...` as its Java
 launcher. `/cgi/vkvmload.xsl` chooses Java or historical platform plugins based
@@ -54,7 +55,7 @@ or view-only access.
 
 ## Launcher bring-up (later on October 29)
 
-Owner confirmed .254 is powered off; .253 is expected to show a Linux login.
+Owner confirmed Controller B is powered off; Controller A is expected to show a Linux login.
 Downloaded the viewer and inspected its Java input interfaces. The Linux native
 keyboard library is 32-bit ELF. A private Azul Java 8u512 x86 runtime runs here.
 
@@ -66,7 +67,7 @@ match the recovered script. Session tickets are transient and not saved in Git.
 The console handshake uses SSLv3 even with EncryptionEnabled=0. A process-local
 Java security-properties override fixed the earlier SSL failure. Confirmed a
 successful User Login Response (0), Video Connect Status true, and 800x600 video
-resolution metadata on .253. The original vendor window then displayed **No
+resolution metadata on Controller A. The original vendor window then displayed **No
 Signal**. This is not verification of the expected Linux prompt; the video source
 or blanking state needs checking. No remote wake key or mouse input was sent.
 
@@ -84,7 +85,7 @@ See [launcher instructions](../launcher/README.md) for limitations and commands.
 The owner confirmed CentOS blanks its display and explicitly directed a NumLock
 cycle. A temporary diagnostic bypassed the normal input no-op only for exactly
 two NumLock press/release pairs, restoring the prior toggle parity. No other key
-or mouse events were sent. After waiting for video to resume, the .253 Linux
+or mouse events were sent. After waiting for video to resume, the Controller A Linux
 login prompt was visually verified in the private display. Authentication and
 video rendering are therefore confirmed on this device. The normal committed
 launcher remains view-only; the one-time wake helper is not part of its source.

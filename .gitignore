@@ -3,10 +3,27 @@ __pycache__/
 .venv/
 *.egg-info/
 .env
+.env.*
+!.env.example
 .local/
 artifacts/
 *.cookies
 *.jnlp
+*.vault
+*.key
+*.pem
+*.p12
+*.pfx
+devices.json
+devices.properties
+machines.txt
+auth.json
+Xauthority
+*.xwd
+*.jar
+*.class
+dist/
+build/
 
 *.log
 core

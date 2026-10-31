@@ -1,0 +1,24 @@
+services:
+  dracula:
+    image: ghcr.io/greaper88/dracula:0.1.0
+    platform: linux/amd64
+    init: true
+    ports:
+      - "127.0.0.1:8788:8080"
+    volumes:
+      - dracula-data:/data
+      - dracula-keys:/keys
+      - dracula-cache:/app/.local
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 256
+    mem_limit: 1g
+    cpus: 2
+    restart: unless-stopped
+volumes:
+  dracula-data:
+  dracula-keys:
+  dracula-cache:

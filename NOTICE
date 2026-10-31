@@ -1,0 +1,11 @@
+DRACula
+Copyright 2026 DRACula contributors
+
+DRACula's original source code and documentation are licensed under the
+Apache License, Version 2.0. See LICENSE.
+
+Third-party software retains its own copyrights and licenses. See
+THIRD_PARTY_NOTICES.md and apps/web/THIRD_PARTY.md. Java runtimes and Dell's
+proprietary viewer are not included in the default application image or source
+release. Their download and use do not relicense those components under
+DRACula's license.

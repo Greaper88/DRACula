@@ -1,3 +1,5 @@
+// Copyright 2026 DRACula contributors
+// SPDX-License-Identifier: Apache-2.0
 package dracula;
 
 import javax.crypto.*;
@@ -22,9 +24,9 @@ final class DeviceStore implements AutoCloseable {
         Properties p=new Properties();Path file=directory.resolve("devices.properties");
         if(Files.exists(file))try(InputStream in=Files.newInputStream(file)){p.load(in);}
         for(String host:p.getProperty("hosts","").split(","))if(Manager.validHost(host))profiles.put(host,new Profile(p.getProperty(host+".name",host),host,p.getProperty(host+".user","root"),Boolean.parseBoolean(p.getProperty(host+".saved","false"))));
-        if(profiles.isEmpty()){
+        if(!Files.exists(file)){
             Path old=directory.resolve("machines.txt");
-            List<String> hosts=Files.exists(old)?Files.readAllLines(old):List.of("192.168.1.252","192.168.1.253","192.168.1.254");
+            List<String> hosts=Files.exists(old)?Files.readAllLines(old):List.of();
             for(String host:hosts)if(Manager.validHost(host))profiles.put(host,new Profile("DRAC 5",host,"root",false));
         }
     }

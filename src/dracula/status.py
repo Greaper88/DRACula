@@ -1,8 +1,12 @@
+# Copyright 2026 DRACula contributors
+# SPDX-License-Identifier: Apache-2.0
 """Read-only DRAC 5 page catalog and normalized status rows shared by UIs."""
 from dataclasses import dataclass
+import hashlib
 import re
 from xml.etree import ElementTree as ET
 from .launcher import Device
+from .field_schema import field_spec
 
 @dataclass(frozen=True)
 class Page:
@@ -46,6 +50,33 @@ BY_KEY={page.key:page for page in PAGES}
 READ_ENDPOINTS=frozenset('/cgi-bin/webcgi/'+e for p in PAGES for e in p.endpoints)
 class StatusDevice(Device):
     READ_PATHS=READ_ENDPOINTS | {'/cgi-bin/webcgi/main','/cgi-bin/webcgi/logout'}
+    def __init__(self,host):
+        super().__init__(host)
+        self._credentials=None
+        self._refreshing=False
+    def login(self,user,password):
+        self._refreshing=True
+        try:
+            super().login(user,password)
+            self._credentials=(user,password)
+        finally:self._refreshing=False
+    def request(self,path,data=None):
+        try:return super().request(path,data)
+        except RuntimeError as exc:
+            expired=str(exc) in (
+                'Device session unavailable; redirect to /cgi-bin/webcgi/login',
+                'Device session unavailable; redirect to /cgi-bin/webcgi/timeout',
+                'Device session unavailable; redirect to /cgi/unlock.html')
+            if not expired or self._refreshing or not self._credentials or data is not None or path=='/cgi-bin/webcgi/logout':raise
+            # Retry only an expired read, once, using server-side credentials.
+            self.login(*self._credentials)
+            return super().request(path)
+    def close(self):
+        if self._credentials:
+            try:super().logout()
+            except Exception:pass
+            self._credentials=None
+        super().close()
 
 SECRET=re.compile(r'password|passwd|secret|token|sessionid|^sid$|mysidindex|privatekey|encryptionkey|community|credential|^cid$',re.I)
 SKIP={'privilege','LOGIN','RESP','SMStatus','MsgStatus'}
@@ -64,8 +95,14 @@ LABELS={
  'UNCThreshold':'Upper warning threshold','LNCThreshold':'Lower warning threshold','LCThreshold':'Lower critical threshold',
  'LNRThreshold':'Lower non-recoverable threshold','Redundency':'Redundancy flags','RedundencyState':'Redundancy',
  'RedundencyStatus':'Redundancy health','BiosVersion':'BIOS version','IpAddress':'IP address',
- 'IpAddrSource':'Address source','DhcpEnabled':'DHCP enabled','IpmiLanEnabled':'IPMI over LAN enabled',
+ 'IpAddrSource':'DHCP for network address','DhcpEnabled':'DNS servers from DHCP','IpmiLanEnabled':'IPMI over LAN enabled',
  'SOLEnabled':'Serial over LAN enabled','KMPortNumber':'Keyboard / mouse port','VideoPortNumber':'Video port',
+ 'DnsEnabled':'DNS registration','DomainNameDhcp':'DNS domain from DHCP','Server1':'Preferred DNS server','Server2':'Alternate DNS server',
+ 'AutoNegotiation':'Automatic link negotiation','SCLEnabled':'System configuration lock enabled',
+ 'LocalCfgUsingRomDisabled':'Local configuration via ROM disabled','LocalCfgUsingRACADMDisabled':'Local configuration via RACADM disabled',
+ 'PEFAlertingEnable':'Platform event alerts','entryEnable':'Destination enabled','emailAddr':'Email address','emailDesc':'Email description',
+ 'login':'Log in to DRAC','cfg':'Configure DRAC','cfguser':'Configure users','clearlog':'Clear logs permission','servercontrol':'Server control permission','console':'Console access','vmedia':'Virtual media access','testalert':'Test alerts permission','debug':'Diagnostics permission',
+ 'evtFltrActionPwrCycl':'Power cycle on event','evtFltrActionReset':'Reset on event','evtFltrActionPwrOff':'Power off on event','evtFltrActionAlert':'Generate alert on event','evtFltrActionPwrReduction':'Reduce power on event',
  'PSLocation':'Location','PSWattage':'Rated power (W)','PSState':'State','PSType':'Supply type',
 }
 
@@ -73,26 +110,55 @@ def label(value):
     if value in LABELS:return LABELS[value]
     return re.sub(r'(?<=[a-z0-9])(?=[A-Z])',' ',value).replace('_',' ')
 
-def status_rows(data: bytes) -> list[tuple[str,str,str]]:
+@dataclass(frozen=True)
+class FieldRow:
+    group: str
+    field: str
+    value: str
+    kind: str = 'text'
+    checked: bool | None = None
+    changeability: str = 'unknown'
+    evidence: str = ''
+    key: str = ''
+    edit: dict | None = None
+
+def field_rows(data: bytes, endpoint='', capture=None, *, root=None) -> list[FieldRow]:
     """Retain repeated log/sensor records; never execute device XSL or HTML."""
     if len(data)>8_000_000 or b'<!DOCTYPE' in data.upper() or b'<!ENTITY' in data.upper():
         raise ValueError('Unsafe or oversized device XML')
-    root=ET.fromstring(data)
+    if root is None:root=ET.fromstring(data)
     if root.tag!='drac' or root.find('LOGIN') is not None:
         raise ValueError('Expected authenticated DRAC status XML')
     rows=[]
+    def append(scope,name,value,unit='',node=None):
+        spec=field_spec(endpoint,name)
+        rendered=display_value(name,value) if value else 'Not reported'
+        checked=None;kind='text'
+        if spec.control in ('switch','truth') or value.lower() in ('true','false'):
+            kind='boolean'
+            checked={'0':False,'1':True,'false':False,'true':True}.get(value.lower()) if not unit else None
+            if checked is not None:
+                rendered=('True' if checked else 'False') if spec.control=='truth' or (spec.control!='switch' and value.lower() in ('true','false')) else ('Enabled' if checked else 'Disabled')
+            elif value:rendered='Unknown (code '+value+')'
+        elif spec.control=='choice' and value:
+            rendered=dict(spec.choices).get(value,'Unknown (code '+value+')')
+            if set(dict(spec.choices))=={'0','1'} and value in ('0','1'):
+                kind='binary-choice';checked=value=='1'
+        key=hashlib.sha256((endpoint+'\0'+scope+'\0'+name).encode()).hexdigest()[:24]
+        rows.append(FieldRow(scope,label(name),rendered,kind,checked,spec.changeability,spec.evidence,key))
+        if capture is not None:capture(key,node,name)
     def visit(node,scope):
         name=node.get('name',node.tag)
         if node.tag in SKIP or SECRET.search(name):return
         if node.tag=='property':
             value=node.findtext('value',default='')
-            rows.append((scope,label(name),display_value(name,value.strip()) if value.strip() else 'Not reported'))
+            append(scope,name,value.strip(),node=node)
             return
         if not list(node):
             text=(node.text or '').strip()
             unit=node.get('unit','')
             if unit:text=(text+' '+unit).strip()
-            rows.append((scope,label(name),display_value(name,text) if text else 'Not reported'))
+            append(scope,name,text,unit,node)
             return
         counts={}
         for child in node:
@@ -109,14 +175,19 @@ def status_rows(data: bytes) -> list[tuple[str,str,str]]:
     if not rows:raise ValueError('No status fields were reported')
     return rows
 
-def fetch_page(device,page):
+def status_rows(data: bytes) -> list[tuple[str,str,str]]:
+    return [(row.group,row.field,row.value) for row in field_rows(data)]
+
+def fetch_page(device,page,*,detailed=False):
     rows=[];errors=[]
     for endpoint in page.endpoints:
         try:
             data=device.request('/cgi-bin/webcgi/'+endpoint)
-            for scope,name,value in status_rows(data):
-                if page.key=='firmware' and not any(word in name.lower() for word in ('firmware','bios')):continue
-                rows.append((label(endpoint)+((' / '+scope) if scope else ''),name,value))
+            for row in field_rows(data,endpoint):
+                if page.key=='firmware' and not any(word in row.field.lower() for word in ('firmware','bios')):continue
+                group=label(endpoint)+((' / '+row.group) if row.group else '')
+                if detailed:rows.append(FieldRow(group,row.field,row.value,row.kind,row.checked,row.changeability,row.evidence,row.key,row.edit))
+                else:rows.append((group,row.field,row.value))
         except Exception as exc:
             errors.append(endpoint+': '+str(exc))
     return rows,errors

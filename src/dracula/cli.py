@@ -1,3 +1,5 @@
+# Copyright 2026 DRACula contributors
+# SPDX-License-Identifier: Apache-2.0
 """Offline inspection entry point; no device-changing commands are exposed."""
 import argparse
 import json

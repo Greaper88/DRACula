@@ -1,3 +1,5 @@
+# Copyright 2026 DRACula contributors
+# SPDX-License-Identifier: Apache-2.0
 import unittest
 from dracula.drac5 import parse_status
 
