@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.1.0 — initial public preview
+## 0.1.1 — initial public preview
+
+The initial 0.1.0 source candidate was not released as a package: the clean CI
+runner exposed an IPMI test fixture depending on an installed helper. The fixture
+now mocks helper discovery, and a separate missing-helper regression is included.
 
 - Shared Python core for a Linux desktop manager and Docker-hosted web dashboard.
 - User-configured devices with encrypted credentials; fresh installs start empty.

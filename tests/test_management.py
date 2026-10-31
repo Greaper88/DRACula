@@ -20,7 +20,13 @@ class IpmiTests(unittest.TestCase):
         def probe(command,transport=None,privilege=None):
             if (privilege or a.privilege)=='USER' and (transport or a.transport)==TRANSPORTS[0]:return 'Chassis Power is off'
             raise IpmiError('not available')
-        a._run=Mock(side_effect=probe);self.assertEqual(a.probe(),'OFF');self.assertFalse(a.power_status()[1]);self.assertTrue(all(c.args[0]==('chassis','power','status') for c in a._run.call_args_list))
+        a._run=Mock(side_effect=probe)
+        with patch('dracula.ipmi.shutil.which',return_value='/synthetic/ipmitool'):
+            self.assertEqual(a.probe(),'OFF');self.assertFalse(a.power_status()[1]);self.assertTrue(all(c.args[0]==('chassis','power','status') for c in a._run.call_args_list))
+    def test_missing_helper_fails_before_any_subprocess_or_hardware_access(self):
+        with patch('dracula.ipmi.shutil.which',return_value=None),patch('dracula.ipmi.subprocess.run') as run:
+            with self.assertRaisesRegex(IpmiError,'requires ipmitool'):IpmiAdapter('192.0.2.1','reader','synthetic').probe()
+            run.assert_not_called()
     def test_no_raw_error_or_secrets_exposed(self):
         a=IpmiAdapter('192.0.2.1','root','private-test-password');a.transport=TRANSPORTS[0];a.privilege='ADMINISTRATOR'
         with patch('dracula.ipmi.shutil.which',return_value='ipmitool'),patch('dracula.ipmi.subprocess.run',return_value=subprocess.CompletedProcess([],1,b'',b'private-test-password token=secret')):

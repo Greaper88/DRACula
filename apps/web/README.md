@@ -6,7 +6,7 @@ This preview targets **Linux AMD64**. ARM64 is not validated.
 
 ## Published image
 
-Use `ghcr.io/greaper88/dracula:0.1.0` with the copyable configuration in the
+Use `ghcr.io/greaper88/dracula:0.1.1` with the copyable configuration in the
 [root README](../../README.md#web-app-published-docker-image), or
 [compose.release.yaml](../../compose.release.yaml). Run the password-setup command
 there before starting. No checkout or local image build is needed.
@@ -89,7 +89,7 @@ Build the normal runtime-free image:
 
 ```sh
 docker build --platform linux/amd64 -f apps/web/Dockerfile \
-  --build-arg BUNDLE_JAVA=false -t dracula-web:0.1.0 .
+  --build-arg BUNDLE_JAVA=false -t dracula-web:0.1.1 .
 ```
 
 For a private deployment that needs Java included in its image:
@@ -107,8 +107,8 @@ The project image is published to GitHub Container Registry. To publish a
 separate image under your own registry, replace the placeholder and tag:
 
 ```sh
-docker tag dracula-web:0.1.0 YOUR_REGISTRY/dracula-web:0.1.0
-docker push YOUR_REGISTRY/dracula-web:0.1.0
+docker tag dracula-web:0.1.1 YOUR_REGISTRY/dracula-web:0.1.1
+docker push YOUR_REGISTRY/dracula-web:0.1.1
 ```
 
 To run a published image, replace the Compose service's `image` and remove its

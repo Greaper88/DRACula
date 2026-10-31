@@ -1,4 +1,4 @@
-# Release validation — 0.1.0 preview
+# Release validation — 0.1.1 preview
 
 Prepared October 31, 2026 (America/Chicago). This release pass used offline
 fixtures and isolated local containers/displays. No management-controller request
@@ -16,7 +16,7 @@ python3 -m venv .venv
 PYTHON_BIN=.venv/bin/python ./scripts/check.sh
 ```
 
-The current pass completed **116 Python tests**, **29 browser logic tests** and
+The current pass completed **117 Python tests**, **29 browser logic tests** and
 **six Java test programs** without skips. Coverage includes parsers, profile/vault
 handling, empty first-run lists, last-profile removal/restart, confirmation binding,
 power state/permissions, reconnect/cleanup, input gates, geometry, themes, portable
@@ -25,7 +25,7 @@ HTTP isolation and bootstrap archive/path/link safety.
 ```sh
 ./apps/desktop/build.sh
 java -Djava.awt.headless=true -Ddracula.home=/tmp/dracula-clean-check \
-  -jar dist/DRACula-0.1.0.jar --prepare-only
+  -jar dist/DRACula-0.1.1.jar --prepare-only
 python3 scripts/build-release.py
 ```
 
@@ -40,7 +40,7 @@ contains Apache/dependency notices and no Java, Python or vendor runtime binarie
 
 ```sh
 docker build --platform linux/amd64 -f apps/web/Dockerfile \
-  --build-arg BUNDLE_JAVA=false -t ghcr.io/greaper88/dracula:0.1.0 .
+  --build-arg BUNDLE_JAVA=false -t ghcr.io/greaper88/dracula:0.1.1 .
 docker compose -f compose.release.yaml config --quiet
 ```
 
