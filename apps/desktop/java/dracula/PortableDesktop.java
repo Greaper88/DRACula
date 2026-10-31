@@ -94,7 +94,7 @@ public final class PortableDesktop {
                 byte[] bytes=resource("/payload/"+fields[1]);if(!digest(bytes).equals(fields[0]))throw new IOException("Support checksum mismatch");
                 Path file=confined(temp,fields[1]);Files.createDirectories(file.getParent());Files.write(file,bytes,StandardOpenOption.CREATE_NEW);
             }
-            Files.writeString(temp.resolve(".complete"),"0.1.2\n");Files.move(temp,root);return root;
+            Files.writeString(temp.resolve(".complete"),"0.1.3\n");Files.move(temp,root);return root;
         }finally{removeTree(temp);}
     }
     static Path preparePython(Path home,String platform,Consumer<String> status)throws Exception {
@@ -105,7 +105,7 @@ public final class PortableDesktop {
             status.accept("Downloading the private desktop backend…");Path download=Files.createTempFile(runtimes,"download-",".tmp");
             try {
                 HttpClient client=HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).connectTimeout(Duration.ofSeconds(20)).build();
-                HttpRequest request=HttpRequest.newBuilder(spec.url()).timeout(Duration.ofMinutes(3)).header("User-Agent","DRACula/0.1.2").build();
+                HttpRequest request=HttpRequest.newBuilder(spec.url()).timeout(Duration.ofMinutes(3)).header("User-Agent","DRACula/0.1.3").build();
                 HttpResponse<InputStream> response=client.send(request,HttpResponse.BodyHandlers.ofInputStream());
                 try(InputStream in=response.body();OutputStream out=Files.newOutputStream(download)){
                     if(response.statusCode()!=200)throw new IOException("Backend download failed (HTTP "+response.statusCode()+")");

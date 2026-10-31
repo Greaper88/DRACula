@@ -252,12 +252,9 @@ def main(argv=None, credentials=None):
         classes.mkdir(parents=True,exist_ok=True)
         # Compile adapter against the exact approved viewer with the private JDK.
         compiler=java.parent/'javac'
-        env=os.environ.copy()
+        from .kvm_runtime import viewer_environment
+        env=viewer_environment(os.environ,CACHE)
         env['DRACULA_INPUT_CAPABLE']='1' if args.interactive else '0'
-        env['LD_LIBRARY_PATH']=str(CACHE/'lib32/usr/lib/i386-linux-gnu')
-        env.pop('JAVA_TOOL_OPTIONS',None)
-        env.pop('_JAVA_OPTIONS',None)
-        env.pop('JDK_JAVA_OPTIONS',None)
         sources=sorted((ROOT/'launcher/java').glob('*.java'))
         subprocess.run([str(compiler),'-cp',str(jar),'-d',str(classes),*[str(s) for s in sources]],env=env,check=True)
         subprocess.run([str(java),'-Djava.awt.headless=true','-cp',str(classes)+os.pathsep+str(jar),'dracula.ReadOnlySelfTest'],cwd=CACHE,env=env,check=True,timeout=20,stdout=subprocess.DEVNULL)

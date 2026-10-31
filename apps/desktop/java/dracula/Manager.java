@@ -260,8 +260,8 @@ public final class Manager extends JFrame {
                 }else if(line.startsWith("ERROR\t")&&output.length()<8000)output.append(new String(Base64.getDecoder().decode(line.substring(6)),StandardCharsets.UTF_8)).append('\n');
             }}
             int code=proc.waitFor();String message=code==0?"KVM window closed":"KVM could not open: "+output;
-            SwingUtilities.invokeLater(()->{if(request==generation){status.setText(panel.cancelled?"KVM closed":message.replace('\n',' '));console.setEnabled(bridge!=null&&kvmSupported);if(code==0||panel.cancelled)panel.dispose();else panel.showState("failed",0,0);}});
-        }catch(Exception e){if(proc!=null&&proc.isAlive())proc.destroy();SwingUtilities.invokeLater(()->{if(request==generation){status.setText("KVM launch failed: "+e.getMessage());console.setEnabled(bridge!=null&&kvmSupported);panel.showState("failed",0,0);}});}
+            SwingUtilities.invokeLater(()->{if(request==generation){status.setText(panel.cancelled?"KVM closed":message.replace('\n',' '));console.setEnabled(bridge!=null&&kvmSupported);if(code==0||panel.cancelled)panel.dispose();else panel.showFailure(output.toString());}});
+        }catch(Exception e){if(proc!=null&&proc.isAlive())proc.destroy();SwingUtilities.invokeLater(()->{if(request==generation){status.setText("KVM launch failed: "+e.getMessage());console.setEnabled(bridge!=null&&kvmSupported);panel.showFailure(e.getMessage());}});}
         finally{Arrays.fill(auth,'\0');if(proc!=null)consoles.remove(proc);SwingUtilities.invokeLater(()->{if(request==generation){console.setEnabled(bridge!=null&&kvmSupported);if(panel.cancelled){panel.dispose();status.setText("KVM closed");}}});}},"dracula-console");task.setDaemon(true);task.start();
     }
     static ProcessBuilder python(Path root,String... flags){

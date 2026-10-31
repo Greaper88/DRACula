@@ -26,7 +26,7 @@ jobs:
           ./scripts/check.sh
           python scripts/build-release.py
       - name: Verify standalone backend bootstrap
-        run: java -Djava.awt.headless=true -Ddracula.home="$RUNNER_TEMP/dracula" -jar dist/DRACula-0.1.2.jar --prepare-only
+        run: java -Djava.awt.headless=true -Ddracula.home="$RUNNER_TEMP/dracula" -jar dist/DRACula-0.1.3.jar --prepare-only
       - name: Build and publish runtime-free image
         env:
           GH_TOKEN: ${{ github.token }}
@@ -41,4 +41,4 @@ jobs:
       - name: Publish preview release assets
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/DRACula-0.1.2.jar dist/DRACula-0.1.2-source.tar.gz dist/SHA256SUMS --verify-tag --title "DRACula $GITHUB_REF_NAME" --notes-file docs/RELEASE_NOTES.md --prerelease
+        run: gh release create "$GITHUB_REF_NAME" dist/DRACula-0.1.3.jar dist/DRACula-0.1.3-source.tar.gz dist/SHA256SUMS --verify-tag --title "DRACula $GITHUB_REF_NAME" --notes-file docs/RELEASE_NOTES.md --prerelease

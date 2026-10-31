@@ -54,3 +54,12 @@ It does not embed Python binaries. Each platform archive is pinned by SHA-256;
 its included Python and component license files remain in the extracted private
 runtime. CPython and its bundled components retain their upstream licenses.
 See the upstream [distribution documentation](https://gregoryszorc.com/docs/python-build-standalone/main/distributions.html).
+
+When Linux desktop KVM is missing 32-bit Xtst, the portable launcher downloads
+Debian's `libxtst6` i386 package version `2:1.2.3-1.1` directly from
+[Debian](https://packages.debian.org/bookworm/libxtst6). The package, library and
+copyright-file SHA-256 values are pinned in `src/dracula/kvm_runtime.py`.
+Only the library and upstream copyright/license text are copied into the private
+`state/lib32` cache; no package scripts run. The library retains its X.Org/MIT
+licenses, recorded in `state/lib32/usr/share/doc/libxtst6/copyright`.
+It is downloaded on demand, not embedded in the JAR or source archive.

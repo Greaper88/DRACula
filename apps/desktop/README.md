@@ -7,12 +7,12 @@ installed separately.
 
 ## Download and launch
 
-Download [DRACula-0.1.2.jar](https://github.com/Greaper88/DRACula/releases/download/v0.1.2/DRACula-0.1.2.jar)
-from the [release page](https://github.com/Greaper88/DRACula/releases/tag/v0.1.2).
+Download [DRACula-0.1.3.jar](https://github.com/Greaper88/DRACula/releases/download/v0.1.3/DRACula-0.1.3.jar)
+from the [release page](https://github.com/Greaper88/DRACula/releases/tag/v0.1.3).
 Double-click it if JAR files are associated with Java, or run:
 
 ```sh
-java -jar DRACula-0.1.2.jar
+java -jar DRACula-0.1.3.jar
 ```
 
 First setup requires HTTPS access to GitHub's official standalone-Python release.
@@ -49,6 +49,14 @@ not move or delete saved profiles.
 
 The portable JAR prepares private Java on first KVM use. The viewer also requires
 32-bit glibc, libstdc++, X11, Xext, Xrender, Xtst, Xi, freetype, fontconfig and ALSA.
+Starting in 0.1.3, desktop builds check Java's graphics and fonts locally before starting
+any KVM device session. If Xtst is missing, the portable launcher downloads the
+checksum-pinned Debian i386 library into its private `state/lib32` cache and
+retains its copyright file. This needs no administrator access and does not
+install a system package. Other missing libraries or an unavailable display
+produce a setup error in the console dialog rather than repeated reconnects.
+The published 0.1.2 JAR predates this automatic repair.
+
 For Debian/Ubuntu, install the compatible packages with administrator access:
 
 ```sh
@@ -72,7 +80,7 @@ Commons dependencies from Maven Central. Build with:
 ./apps/desktop/build.sh
 ```
 
-The output is `dist/DRACula-0.1.2.jar`. It embeds Java dependencies with their
+The output is `dist/DRACula-0.1.3.jar`. It embeds Java dependencies with their
 upstream notices, shared Python source and launcher support files, with no device
 credentials, runtime binaries or Dell viewer.
 

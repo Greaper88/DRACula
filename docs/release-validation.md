@@ -93,3 +93,64 @@ Public v0.1.2 verification completed: anonymous GHCR pull, matching JAR/source
 checksums, and successful private-backend setup using the published JAR on
 Windows, macOS and Linux hosted runners. The release workflow and separate
 portable-smoke workflow both passed.
+
+## Published-artifact fresh-install hardware check
+
+The published 0.1.2 image was pulled by immutable digest and the release JAR was
+redownloaded and checked against the published SHA-256. Separate empty web and
+desktop data stores were used with one authorized diskless DRAC 5 target. No
+other controller was accessed; input stayed disabled throughout. No power,
+configuration, firmware or virtual-media changes were sent.
+
+The web image downloaded its own pinned Java runtime and viewer, read overview,
+fan, temperature and KVM settings, and displayed the POST screen in the browser.
+Closing it removed the worker and returned the KVM count to zero.
+
+The JAR downloaded its private Python backend and read status through the portable
+stdlib HTTPS transport. Its initial KVM launch exposed a missing host prerequisite:
+32-bit `libXtst.so.6`. With that documented library supplied privately in a new
+isolated installation, the unchanged published JAR downloaded its own private Java
+and viewer and displayed the same POST screen. Input remained disabled, closing
+removed its worker, and final controller readback showed zero KVM sessions. No
+host packages were installed or changed.
+
+Fresh application state does not provide the desktop's documented native system
+libraries automatically. In 0.1.2, a missing library can appear as a reconnecting
+console rather than a direct dependency message. A clearer preflight error remains
+an improvement to make. Docker already includes these libraries.
+
+## 0.1.3 desktop prerequisite repair
+
+A user's independently downloaded 0.1.2 JAR reproduced the same missing 32-bit
+Xtst prerequisite. The source fix adds a local AWT/font preflight before creating
+a console supervisor. Portable mode downloads the pinned Debian i386 Xtst package
+when needed, verifies package and selected-file SHA-256 values, and retains its
+copyright file privately. No system package or global Java setting is changed.
+Other prerequisites and display failures stop with an actionable console-dialog
+error before logging into a controller.
+
+The real private Java runtime reproduced the missing-library failure on an
+isolated local display. The fix downloaded the library and passed AWT/font
+startup; another check reused it without downloading. All **128 Python tests**,
+**29 browser tests** and **six Java test programs** passed. New coverage includes
+pre-login failure, missing loader/display/library, download failure, checksum
+rejection, restricted package copying and retained notices. No controller was
+accessed while testing this fix.
+
+The rebuilt JAR also passed a separate empty-data bootstrap using its embedded
+core and private Python, followed by the real Java graphics check and private
+Xtst download. Docker rebuilt successfully and passed network-disabled import
+and empty-install inspection. The workstation's existing app cache received the
+same private library and passed local graphics startup; profiles, credentials
+and host packages were not changed. The local build is
+`dist/DRACula-kvm-fix.jar`; no release assets were replaced.
+
+## 0.1.3 publication
+
+The author confirmed that the transferred fixed JAR opened KVM successfully on
+another desktop. Version 0.1.3 packages the same repair, with updated release
+metadata, download links and retained third-party notices. Existing 0.1.2 assets
+are preserved. The release workflow reruns the offline checks, builds the JAR
+and source archive, generates checksums, verifies standalone backend bootstrap,
+and publishes the matching runtime-free Docker image and preview release.
+No live controller access is needed for publication.

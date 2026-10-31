@@ -1,7 +1,7 @@
 FROM python:3.12-slim-bookworm
 ARG BUNDLE_JAVA=false
 LABEL org.opencontainers.image.title="DRACula" \
-      org.opencontainers.image.version="0.1.2" \
+      org.opencontainers.image.version="0.1.3" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.source="https://github.com/Greaper88/DRACula" \
       org.opencontainers.image.description="DRAC 5 and IPMI management with confirmed actions and isolated legacy KVM"

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.3 — desktop KVM startup fix
+
+- Check desktop KVM's native Java graphics and fonts before allocating a device
+  session. Download and verify a missing 32-bit Xtst library privately in the
+  portable launcher, retaining its license and leaving host packages untouched.
+- Show prerequisite failures directly in the desktop console dialog instead of
+  retrying them as though a remote connection had dropped.
+
 ## 0.1.2 — initial public preview
 
 The 0.1.0 and 0.1.1 source candidates were not published as packages. Clean CI

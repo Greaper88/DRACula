@@ -28,7 +28,7 @@ def main():
         def add(name,data):
             if name in seen:raise ValueError('Duplicate packaged resource: '+name)
             seen.add(name);info=zipfile.ZipInfo(name,(2026,10,31,0,0,0));info.compress_type=zipfile.ZIP_DEFLATED;info.external_attr=0o100644<<16;jar.writestr(info,data)
-        add('META-INF/MANIFEST.MF',b'Manifest-Version: 1.0\nMain-Class: dracula.PortableDesktop\nImplementation-Version: 0.1.2\n\n')
+        add('META-INF/MANIFEST.MF',b'Manifest-Version: 1.0\nMain-Class: dracula.PortableDesktop\nImplementation-Version: 0.1.3\n\n')
         for file in sorted(CLASSES.rglob('*.class')):add(str(file.relative_to(CLASSES)).replace(os.sep,'/'),file.read_bytes())
         for dep in dependencies:
             with zipfile.ZipFile(DEPS/dep['name']) as upstream:
@@ -43,6 +43,6 @@ def main():
         add('bootstrap/python-runtimes.properties',(ROOT/'apps/desktop/bootstrap/python-runtimes.properties').read_bytes())
         add('bootstrap/payload.manifest',manifest.encode())
         for name,data in sorted(payload.items()):add('payload/'+name,data)
-    temporary.replace(output);release=ROOT/'dist/DRACula-0.1.2.jar';release.parent.mkdir(exist_ok=True);shutil.copyfile(output,release)
+    temporary.replace(output);release=ROOT/'dist/DRACula-0.1.3.jar';release.parent.mkdir(exist_ok=True);shutil.copyfile(output,release)
     print('Built self-contained executable JAR:',release.name)
 if __name__=='__main__':main()

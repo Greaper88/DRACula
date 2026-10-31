@@ -6,9 +6,13 @@ from .console_session import ConsoleSession
 
 def run(host,user,password,report=lambda state:None,status_report=lambda info:None):
     if not os.getenv('DISPLAY'):raise RuntimeError('A desktop display is required for the KVM window')
+    from .launcher import CACHE,ROOT,JAVA_NAME
+    from .kvm_runtime import check_display
     if os.getenv('DRACULA_AUTO_JAVA')=='1':
         from .launcher import setup_java
         setup_java()
+    check_display(CACHE/'runtime32'/JAVA_NAME/'bin/java',ROOT,CACHE,
+                  auto_download=os.getenv('DRACULA_AUTO_JAVA')=='1')
     session=ConsoleSession(host,'desktop');session.attached=True;session.max_lifetime=None
     try:
         session.start({'address':host,'username':user},password,display_env=os.environ,stop_on_close=True)

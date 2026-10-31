@@ -9,7 +9,8 @@ import java.awt.event.*;
 
 /** Visible during connection recovery; the live viewer carries its own passive badge. */
 final class ConsoleStatusDialog extends JDialog {
-    final JLabel badge=new JLabel("Connecting"),detail=new JLabel("Opening remote console…");
+    final JLabel badge=new JLabel("Connecting");
+    final JTextArea detail=new JTextArea("Opening remote console…",3,48);
     final JProgressBar progress=new JProgressBar();
     volatile boolean cancelled;
     volatile Runnable cancelAction=()->{};
@@ -18,7 +19,8 @@ final class ConsoleStatusDialog extends JDialog {
         JPanel body=new JPanel(new BorderLayout(0,14));body.setBorder(new EmptyBorder(22,24,20,24));DesktopTheme.style(body,"surface");setContentPane(body);
         JLabel target=new JLabel("Remote console · "+host);target.setFont(new Font(Font.SANS_SERIF,Font.PLAIN,13));DesktopTheme.style(target,"muted");body.add(target,BorderLayout.NORTH);
         JPanel middle=new JPanel(new GridLayout(0,1,0,12));middle.setOpaque(false);
-        badge.setFont(new Font(Font.SANS_SERIF,Font.BOLD,22));badge.getAccessibleContext().setAccessibleName("Console connection status");middle.add(badge);middle.add(detail);
+        badge.setFont(new Font(Font.SANS_SERIF,Font.BOLD,22));badge.getAccessibleContext().setAccessibleName("Console connection status");middle.add(badge);
+        detail.setEditable(false);detail.setOpaque(false);detail.setLineWrap(true);detail.setWrapStyleWord(true);detail.setFont(target.getFont());middle.add(detail);
         progress.setIndeterminate(true);middle.add(progress);body.add(middle,BorderLayout.CENTER);
         JPanel bottom=new JPanel(new BorderLayout(15,0));bottom.setOpaque(false);JLabel mode=new JLabel("Keyboard and mouse can be enabled in the viewer");mode.setFont(new Font(Font.SANS_SERIF,Font.PLAIN,11));bottom.add(mode,BorderLayout.WEST);
         JButton close=new JButton("Close console");close.addActionListener(e->cancel());bottom.add(close,BorderLayout.EAST);body.add(bottom,BorderLayout.SOUTH);
@@ -26,6 +28,7 @@ final class ConsoleStatusDialog extends JDialog {
         setMinimumSize(new Dimension(470,230));pack();setLocationRelativeTo(owner);
     }
     void cancel(){if(cancelled)return;cancelled=true;cancelAction.run();dispose();}
+    void showFailure(String message){showState("failed",0,0);detail.setText(message==null||message.isBlank()?"KVM could not start. Check the desktop setup guide.":message.strip());}
     void showState(String state,int attempt,int retryIn){
         if(cancelled)return;
         boolean connected=state.equals("connected"),closing=state.equals("closing"),failed=state.equals("failed");
