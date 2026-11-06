@@ -225,6 +225,44 @@ class WebTests(unittest.TestCase):
         m.http_ready=False
         self.assertEqual(self.client.post('/api/devices/primary/kvm',headers=self.origin).status_code,409)
 
+    def test_sol_requires_session_and_origin_and_closes_only_its_worker(self):
+        import threading
+        import time
+        from unittest.mock import Mock
+        from starlette.websockets import WebSocketDisconnect
+        from test_sol import synthetic_adapter
+
+        path='/api/devices/primary/sol'
+        with self.assertRaises(WebSocketDisconnect):
+            with self.client.websocket_connect(path,headers=self.origin):pass
+        self.login()
+        received=self.directory/'sol-input'
+        connection=Mock(closed=False,lock=threading.RLock())
+        connection.management.sol_access.return_value=(('-I','lanplus','-C','3'),'ADMINISTRATOR')
+        connection.management.ipmi=synthetic_adapter(received)
+        api.CONNECTIONS['primary']=connection
+        with self.assertRaises(WebSocketDisconnect):
+            with self.client.websocket_connect(path,headers={'Origin':'http://evil.invalid'}):pass
+        connection.management.ipmi.command.assert_not_called()
+        with self.client.websocket_connect(path,headers=self.origin) as ws:
+            state=ws.receive_json()
+            if state['state']=='starting':state=ws.receive_json()
+            self.assertEqual(state['state'],'connected')
+            self.assertFalse(state['input_enabled'])
+            with self.client.websocket_connect(path,headers=self.origin) as duplicate:
+                self.assertEqual(duplicate.receive_json()['state'],'failed')
+            ws.send_json({'type':'input','data':'blocked'})
+            ws.send_json({'type':'enable','enabled':True})
+            while not ws.receive_json()['input_enabled']:pass
+            ws.send_json({'type':'input','data':'permitted'})
+            self.assertIn('input received',ws.receive_json()['text'])
+        deadline=time.monotonic()+3
+        while api.WORKERS and time.monotonic()<deadline:
+            time.sleep(.02)
+        self.assertEqual(received.read_bytes(),b'permitted')
+        self.assertTrue(received.with_suffix('.closed').exists())
+        self.assertFalse(api.WORKERS)
+
     def test_console_input_is_bound_to_owner_and_validated_by_worker(self):
         import asyncio
         from unittest.mock import Mock

@@ -4,6 +4,16 @@ The Apache 2.0 license in this repository applies to DRACula's original code and
 documentation. Dependencies and separately downloaded programs retain their own
 licenses and attribution requirements.
 
+## Trademarks and affiliation
+
+DRACula is an independent, open-source project. “DRAC” refers to Dell Remote
+Access Controller and is used in the project name to identify hardware the
+software is designed to work with. DRACula is not affiliated with, endorsed by,
+or sponsored by Dell Technologies.
+
+Dell Technologies, Dell, and other Dell trademarks are trademarks of Dell Inc.
+or its subsidiaries.
+
 ## Web image and Python packages
 
 Direct dependencies are pinned in [requirements.txt](apps/web/requirements.txt).
@@ -19,10 +29,26 @@ package copyright files under `/usr/share/doc`.
 | cryptography | 46.0.5 | Apache-2.0 OR BSD-3-Clause |
 | Pillow | 12.1.1 | MIT-CMU |
 | python-xlib | 0.33 | LGPLv2+ (as declared by the package) |
+| pyte | 0.8.2 | LGPLv3 |
+| wcwidth | 0.2.14 | MIT |
 
 This table identifies direct dependencies; their full upstream license files and
 transitive dependency notices remain with the installed distributions. It does
 not replace those texts or relicense the dependencies.
+
+The desktop JAR also carries the unmodified Python sources and upstream license
+files for [pyte](https://pypi.org/project/pyte/0.8.2/) and its width dependency
+[wcwidth](https://pypi.org/project/wcwidth/0.2.14/). They are extracted into
+the private backend's `src` directory. The build pins their wheels in
+`apps/desktop/bootstrap/python-dependencies.json`.
+
+The SOL terminal uses pyte under LGPLv3. Its upstream LGPL text is included
+under `pyte-0.8.2.dist-info/LICENSE` in the installed Python packages. The
+companion [GNU GPLv3 text](licenses/GPL-3.0.txt) is included in the source
+archive, JAR and Docker image. The Python backend imports pyte from its normal
+module search path, which allows a compatible modified copy to be used with
+the source build. The upstream source distribution is available alongside
+the wheel in the [pyte 0.8.2 release files](https://pypi.org/project/pyte/0.8.2/#files).
 
 The frontend uses repository-owned JavaScript and CSS, system fonts and no
 external JavaScript libraries or remote font service. The development-only HTTP

@@ -19,18 +19,39 @@ class IpmiAdapter:
     def __init__(self,host,user,password):
         self.host=str(ipaddress.IPv4Address(host));self.user=user;self.password=password
         self.transport=None;self.privilege=None;self.failed_until=0
-    def _run(self,command,transport=None,privilege=None):
+    def command(self,command,transport=None,privilege=None):
         binary=shutil.which('ipmitool')
         if not binary:raise IpmiError('IPMI requires ipmitool on the backend host.')
         env=os.environ.copy();env.pop('IPMITOOL_PASSWORD',None);env['IPMI_PASSWORD']=self.password;env['LC_ALL']='C'
         # -R 1 bounds the command response loop to its initial attempt. Never use
         # -R 0 (interpreted as default retries). No application retry after writes.
         args=[binary,* (transport or self.transport),'-H',self.host,'-U',self.user,'-E','-L',privilege or self.privilege,'-N','2','-R','1',*command]
+        return args,env
+    def _run(self,command,transport=None,privilege=None):
+        args,env=self.command(command,transport,privilege)
         try:r=subprocess.run(args,env=env,capture_output=True,timeout=12,check=False)
         except (OSError,subprocess.TimeoutExpired):raise IpmiError('IPMI did not return a definite response.') from None
         if r.returncode:raise IpmiError('IPMI request failed or was not permitted.')
         if len(r.stdout)>2_000_000:raise IpmiError('IPMI response was too large.')
         return r.stdout.decode('utf-8','replace').strip()
+    def sol_access(self):
+        """Find enabled SOL over an authenticated, encrypted IPMI 2.0 transport."""
+        if not shutil.which('ipmitool'):
+            return None
+        transports = [transport for transport in TRANSPORTS if transport[1] == 'lanplus']
+        if self.transport in transports:
+            transports.remove(self.transport)
+            transports.insert(0, self.transport)
+        privilege = self.privilege or 'ADMINISTRATOR'
+        for transport in transports:
+            try:
+                output = self._run(('sol', 'info'), transport, privilege)
+            except IpmiError:
+                continue
+            if re.search(r'^Enabled[ \t]*:[ \t]*true[ \t]*$', output, re.MULTILINE | re.IGNORECASE):
+                return transport, privilege
+            return None
+        return None
     def probe(self):
         if self.transport:return self.state()
         if time.monotonic()<self.failed_until:raise IpmiError('IPMI is unavailable; retry after a minute.')

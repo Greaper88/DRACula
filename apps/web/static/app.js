@@ -13,7 +13,7 @@ async function api(path,options={}){
  if(!response.ok){if(response.status===401 && path!='/login')signedOut();throw Error(typeof body.detail==='string'?body.detail:'The request could not be completed.');}
  return body;
 }
-function signedOut(){resetSettings();closeConsole();show('app',false);show('login-view',true);state.rows=[];state.devices=[];$('login-password').value='';}
+function signedOut(){resetSettings();closeConsole();closeSol();show('app',false);show('login-view',true);state.rows=[];state.devices=[];$('login-password').value='';}
 function current(){return state.devices.find(d=>d.id===state.device);}
 async function signedIn(){
  show('login-view',false);show('app',true);state.fullCatalog=await api('/catalog');state.catalog=state.fullCatalog;await reloadDevices();renderNavigation();selectPage(state.page);
@@ -34,6 +34,7 @@ function renderDevice(){
  const writable=device?.settings_writable&&state.capabilities?.settings;
  text('workspace-mode',writable?'STAGED EDITS':'VIEW ONLY');text('field-mode',writable?'Changes require confirmation':'Read-only connection');text('access-mode',writable?'Confirmed edits':state.capabilities?'Confirmed power':'Not connected');text('access-mode-note',state.capabilities?'Review before sending':'Connect to detect capabilities');text('access-pill',state.capabilities?'CONFIRMATION REQUIRED':'NOT CONNECTED');text('sidebar-mode',writable?'Confirmation required':'Read-only mode');text('sidebar-mode-note',writable?'KVM input starts off':'No power or configuration changes');
  text('crumb-device',device?.name||'No device selected');text('summary-name',device?.name||'No devices');text('summary-address',device?.address||'Add a device to begin');
+ show('sol',Boolean(state.capabilities?.sol));$('sol').disabled=!device?.connected||state.settingsBusy;
  show('kvm',Boolean(state.capabilities?.kvm));text('device-subtitle',device?`${device.address} · ${device.username} · ${state.capabilities?.source||'Management controller'}`:'Add your first DRAC in Manage devices.');text('summary-connection',device?.connected?'Connected':'Disconnected');text('summary-connection-note',device?.connected?'Status connection is active':'Ready when you are');
  text('connect',device?.connected?'Disconnect':'Connect device');$('connect').disabled=!device||state.settingsBusy;$('empty-connect').disabled=!device;$('refresh').disabled=!device?.connected||state.settingsBusy;$('kvm').disabled=!device?.has_password||state.settingsBusy;
 }
@@ -103,7 +104,7 @@ async function loadPage(){
 }
 async function toggleConnection(){
  if(!leaveSettings())return;resetSettings();
- const device=current();if(!device)return;if(!device.has_password&&!device.connected){editProfile(device);return;}
+ const device=current();if(!device)return;closeSol();if(!device.has_password&&!device.connected){editProfile(device);return;}
  $('connect').disabled=true;show('notice',true);text('notice',device.connected?'Closing the status connection…':'Connecting to your DRAC…');
  try{await api(`/devices/${device.id}/${device.connected?'disconnect':'connect'}`,{method:'POST'});await reloadDevices();await selectPage(state.page);}catch(error){show('notice',true);text('notice',error.message);}finally{renderDevice();}
 }
@@ -134,6 +135,7 @@ function renderSettingsTools(){
  text('settings-pending',state.settingsNeedsRefresh?'Check the controller, then refresh before editing again.':state.drafts.size?`${state.drafts.size} staged change${state.drafts.size===1?'':'s'} · Nothing sent yet`:'No staged changes');
  $('apply-settings').disabled=!available||!state.drafts.size||state.settingsBusy;$('discard-settings').disabled=!state.drafts.size||state.settingsBusy;
  $('device-picker').disabled=state.settingsBusy;$('logout').disabled=state.settingsBusy;$('manage').disabled=state.settingsBusy;$('kvm').disabled=!current()?.has_password||state.settingsBusy;
+ $('sol').disabled=!current()?.connected||state.settingsBusy;
  $('connect').disabled=!current()||state.settingsBusy;$('refresh').disabled=!current()?.connected||state.settingsBusy;
 }
 async function applySettings(){
@@ -272,13 +274,15 @@ async function openConsole(){
  await connectStream();$('kvm').disabled=!current()?.has_password;
 }
 $('login-form').onsubmit=async event=>{event.preventDefault();const button=event.submitter;button.disabled=true;try{await api('/login',{method:'POST',body:JSON.stringify({password:$('login-password').value})});$('login-password').value='';await signedIn();}catch(error){text('login-error',error.message);}finally{button.disabled=false;}};
-$('device-picker').onchange=async()=>{if(!leaveSettings()){$('device-picker').value=state.device;return;}resetSettings();await closeConsole();state.device=$('device-picker').value;useCapabilities(current()?.connected?await api(`/devices/${state.device}/capabilities`):null);text('summary-updated','Not yet');renderDevice();await selectPage('overview');};
+$('device-picker').onchange=async()=>{if(!leaveSettings()){$('device-picker').value=state.device;return;}resetSettings();closeSol();await closeConsole();state.device=$('device-picker').value;useCapabilities(current()?.connected?await api(`/devices/${state.device}/capabilities`):null);text('summary-updated','Not yet');renderDevice();await selectPage('overview');};
 $('connect').onclick=toggleConnection;$('empty-connect').onclick=toggleConnection;$('refresh').onclick=loadPage;$('filter').oninput=renderRows;
 $('manage').onclick=()=>{$('devices-dialog').showModal();};$('new-device').onclick=()=>editProfile();
+for(const button of document.querySelectorAll('[data-about]'))button.onclick=()=>{$('about-dialog').showModal();};
 for(const button of document.querySelectorAll('[data-close]'))button.onclick=()=>{$(button.dataset.close).close();if(button.dataset.close==='profile-dialog')$('profile-password').value='';};
 $('profile-form').onsubmit=async event=>{event.preventDefault();const id=$('profile-form').dataset.id;const body={name:$('profile-name').value.trim(),address:$('profile-address').value.trim(),username:$('profile-user').value.trim()};if($('profile-password').value||!id)body.password=$('profile-password').value;event.submitter.disabled=true;
  try{const saved=await api('/devices'+(id?'/'+id:''),{method:id?'PUT':'POST',body:JSON.stringify(body)});state.device=saved.id;$('profile-password').value='';$('profile-dialog').close();await reloadDevices();await selectPage('overview');toast('Device profile saved.');}catch(error){text('profile-error',error.message);}finally{event.submitter.disabled=false;}};
-$('profile-dialog').addEventListener('close',()=>{$('profile-password').value='';});$('logout').onclick=async()=>{if(!leaveSettings())return;resetSettings();await closeConsole();try{await api('/logout',{method:'POST'});}finally{signedOut();}};
+$('profile-dialog').addEventListener('close',()=>{$('profile-password').value='';});$('logout').onclick=async()=>{if(!leaveSettings())return;resetSettings();closeSol();await closeConsole();try{await api('/logout',{method:'POST'});}finally{signedOut();}};
 $('apply-settings').onclick=applySettings;$('discard-settings').onclick=()=>{state.drafts.clear();renderRows();};$('cancel-settings').onclick=cancelSettingsReview;$('confirm-settings').onclick=confirmSettings;$('settings-review').addEventListener('cancel',event=>{event.preventDefault();cancelSettingsReview();});
+initSol();
 $('kvm').onclick=openConsole;$('close-kvm').onclick=closeConsole;$('kvm-dialog').addEventListener('cancel',event=>{event.preventDefault();closeConsole();});
 (async()=>{try{const data=await api('/session');if(data.authenticated)await signedIn();else{signedOut();if(!data.configured)text('login-error','The server needs initial setup. Run apps/web/start.sh on the Docker host.');}}catch(error){signedOut();text('login-error',error.message);}})();

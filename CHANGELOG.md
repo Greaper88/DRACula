@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.4 — Serial over LAN
+
+- Add **Open SOL** beside **Open KVM** in the web and desktop apps when an
+  authenticated controller reports enabled SOL over encrypted IPMI 2.0.
+- Render the serial terminal in view-only mode with an explicit keyboard input
+  switch. Closing the terminal releases its own SOL session.
+- Add an About dialog in both apps and document DRACula's independent status
+  and Dell trademark attribution.
+
 ## 0.1.3 — desktop KVM startup fix
 
 - Check desktop KVM's native Java graphics and fonts before allocating a device

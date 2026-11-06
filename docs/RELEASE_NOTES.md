@@ -1,25 +1,26 @@
-Desktop KVM startup fix for the DRACula public preview.
+DRACula v0.1.4 adds Serial over LAN to the desktop and web apps.
 
-On Linux x86-64, a missing 32-bit `libXtst.so.6` could leave the desktop KVM
-reconnecting without opening a viewer. Version 0.1.3 checks local Java graphics
-and fonts before creating a KVM session. The portable launcher downloads and
-verifies the missing Xtst library into its private cache, retaining its license
-and leaving host packages unchanged. Other missing prerequisites appear as a
-readable error in the console dialog.
+**Open SOL** appears beside **Open KVM** when the selected controller reports
+enabled SOL over encrypted IPMI 2.0. The terminal starts in view-only mode and
+offers an explicit keyboard input switch. Close the terminal to release the
+session it opened.
 
-The author confirmed that the fixed JAR worked after transfer to another desktop.
-Local validation passed 128 Python tests, 29 browser tests, six Java test programs,
-fresh-JAR backend setup, real Java graphics startup, private-library download/cache
-reuse, and the Docker build. No live hardware was accessed for this patch's checks.
+On a Dell DRAC 5, the local web and desktop builds received live serial text.
+The web console received BIOS POST output and reopened after closing. A separate
+live test verified Down and Up in BIOS Setup, with the original row restored and
+settings left alone. Offline tests cover capability detection, terminal rendering,
+input gating, authentication boundaries and worker cleanup.
 
-- **Desktop:** download `DRACula-0.1.3.jar`, then double-click with Java 17+ or run `java -jar DRACula-0.1.3.jar`.
-- **Docker:** `ghcr.io/greaper88/dracula:0.1.3` (Linux AMD64).
-- Source archive and SHA-256 checksums are attached. Version 0.1.2 assets remain unchanged.
+Both apps now have an About dialog with the same independence and trademark
+notice as the README and third-party notices.
 
-Profiles stay in the existing per-user app-data directory when replacing the JAR.
-Legacy DRAC 5 KVM remains Linux x86-64 only and needs the other documented 32-bit
-system libraries. Desktop IPMI needs `ipmitool`. Backend startup on other operating
-systems does not establish legacy KVM compatibility. Console input starts off;
-settings and power operations retain their confirmation workflows.
+- **Desktop** — Download `DRACula-0.1.4.jar` and launch it with Java 17 or later.
+- **Docker** — Use `ghcr.io/greaper88/dracula:0.1.4` on Linux AMD64.
+- The release includes a source archive and SHA-256 checksums.
 
-See the README and desktop setup guide for installation and prerequisites.
+Desktop SOL requires a POSIX backend with `ipmitool` on PATH. Docker includes
+the helper. BIOS or operating system serial redirection must be configured
+on the managed server for the terminal to display output. See the desktop and
+web setup guides for details.
+
+[Set up Dell DRAC 5 KVM and Serial over LAN on a PowerEdge 1950](https://github.com/Greaper88/DRACula/blob/v0.1.4/docs/drac5-kvm-sol.md)

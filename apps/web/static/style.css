@@ -23,3 +23,10 @@ dialog{background:var(--surface)}input::placeholder{color:var(--subtle)}input,se
 .kvm-dialog .console-screen{flex:0 0 auto;height:60vh;min-height:0;max-height:none;margin:0;border:1px solid var(--line);background:var(--console-bg);overflow:hidden;display:flex;align-items:center;justify-content:center}
 .kvm-dialog .console-screen canvas{display:block;flex-shrink:0;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain;margin:0;image-rendering:auto}
 @media(max-width:600px){.kvm-dialog[open]{width:99vw;height:fit-content;max-height:98dvh;padding:12px;gap:8px}.kvm-dialog .dialog-heading p{font-size:10px}.kvm-dialog .console-health{padding:8px 10px;gap:4px}.kvm-dialog .console-input span{margin-left:0;font-size:11px}.topbar-right{gap:7px}.theme-toggle{font-size:10px;padding:6px}.topbar .avatar{display:none}}
+
+/* Attribution is available before login and from the workspace. */
+.about-dialog p{font-size:14px;line-height:1.7}.about-dialog .eyebrow{font-size:10px}.login-card .about-button{display:block;width:auto;margin:12px auto 0}
+
+.sol-dialog{width:min(960px,96vw)}
+#sol-input{width:auto;margin:0}
+#sol-screen{max-height:58dvh;min-height:min(25lh,58dvh);overflow:auto;margin:14px 0;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--raised);color:var(--ink);font:14px/1.35 ui-monospace,monospace;white-space:pre}

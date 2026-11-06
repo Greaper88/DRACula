@@ -8,6 +8,7 @@ from datetime import datetime,timezone
 import hashlib,hmac,ipaddress,json,logging,os,secrets,threading,time
 from pathlib import Path
 from urllib.parse import urlsplit
+from anyio import CancelScope
 from cryptography.fernet import Fernet
 from fastapi import FastAPI,Request,Response,HTTPException,WebSocket,WebSocketDisconnect
 from fastapi.responses import FileResponse,JSONResponse
@@ -17,6 +18,7 @@ from .status import StatusDevice,PAGES,BY_KEY,fetch_page
 from .web_setup import paths
 from .configuration import ConfigEditor,ConfigError,writable
 from .management import ManagementSession
+from .sol import SolSession
 
 ROOT=Path(__file__).resolve().parents[2]
 STATIC=ROOT/'apps/web/static'
@@ -329,6 +331,7 @@ async def start_kvm(identifier:str,request:Request):
 @app.delete('/api/kvm/{key}')
 async def stop_kvm(key:str,request:Request):
     authorized(request);worker=WORKERS.get(key)
+    if isinstance(worker,SolSession):raise HTTPException(404,'Console not found')
     if worker and worker.owner!=request.cookies.get(COOKIE):raise HTTPException(403,'Console belongs to another browser session')
     if worker:WORKERS.pop(key,None);await asyncio.to_thread(worker.stop)
     return {'ok':True}
@@ -336,7 +339,7 @@ async def stop_kvm(key:str,request:Request):
 @app.websocket('/api/kvm/{key}/stream')
 async def console_stream(websocket:WebSocket,key:str):
     token=websocket.cookies.get(COOKIE);worker=WORKERS.get(key)
-    if not session(token) or not worker or worker.owner!=token or worker.attached or not origin_ok(websocket.headers.get('origin'),websocket.headers.get('host','')):
+    if not session(token) or not worker or isinstance(worker,SolSession) or worker.owner!=token or worker.attached or not origin_ok(websocket.headers.get('origin'),websocket.headers.get('host','')):
         await websocket.close(code=1008);return
     worker.attached=True;await websocket.accept()
     async def receive():
@@ -385,10 +388,99 @@ async def console_stream(websocket:WebSocket,key:str):
                 try:await websocket.send_json({'type':'error','message':'The private console worker stopped. Close this window and try again.'})
                 except Exception:pass
     finally:
-        receiver.cancel();sender.cancel();reporter.cancel();await asyncio.gather(receiver,sender,reporter,return_exceptions=True)
-        WORKERS.pop(key,None);await asyncio.to_thread(worker.stop)
-        try:await websocket.close()
-        except Exception:pass
+        receiver.cancel();sender.cancel();reporter.cancel()
+        with CancelScope(shield=True):
+            await asyncio.gather(receiver,sender,reporter,return_exceptions=True)
+            WORKERS.pop(key,None);await asyncio.to_thread(worker.stop)
+            try:await websocket.close()
+            except Exception:pass
+
+@app.websocket('/api/devices/{identifier}/sol')
+async def sol_stream(websocket:WebSocket,identifier:str):
+    token=websocket.cookies.get(COOKIE)
+    if not session(token) or not origin_ok(websocket.headers.get('origin'),websocket.headers.get('host','')):
+        await websocket.close(code=1008)
+        return
+    try:
+        get_profile(identifier)
+    except HTTPException:
+        await websocket.close(code=1008)
+        return
+    connection=CONNECTIONS.get(identifier)
+    if not connection or len(WORKERS)>=2 or any(worker.device_id==identifier for worker in WORKERS.values()):
+        await websocket.accept()
+        await websocket.send_json({'state':'failed','error':'Connect the device first and close any open console.'})
+        await websocket.close()
+        return
+
+    key=secrets.token_urlsafe(24)
+    worker=SolSession(identifier,token)
+    WORKERS[key]=worker
+
+    def start():
+        with connection.lock:
+            if connection.closed or worker.shutdown.is_set():
+                raise RuntimeError('The device disconnected')
+            access=connection.management.sol_access()
+            if not access or worker.shutdown.is_set():
+                raise RuntimeError('SOL is unavailable')
+            worker.start(connection.management.ipmi,access)
+
+    async def receive():
+        window=time.monotonic()
+        count=0
+        while session(token) and not worker.shutdown.is_set():
+            message=await websocket.receive()
+            if message['type']=='websocket.disconnect':
+                return
+            now=time.monotonic()
+            if now-window>=1:
+                window,count=now,0
+            count+=1
+            raw=message.get('text')
+            if count>100 or not raw or len(raw)>4096 or not session(token):
+                raise ValueError('Invalid SOL message')
+            worker.message(json.loads(raw))
+
+    async def send():
+        previous=None
+        while session(token) and not worker.shutdown.is_set():
+            current=worker.snapshot()
+            if current!=previous:
+                await websocket.send_json(current)
+                previous=current
+            if current['state'] in ('failed','closed'):
+                return
+            connection.last=time.monotonic()
+            await asyncio.sleep(.1)
+
+    tasks=[]
+    try:
+        await websocket.accept()
+        await asyncio.to_thread(start)
+        tasks=[asyncio.create_task(receive()),asyncio.create_task(send())]
+        done,_=await asyncio.wait(tasks,return_when=asyncio.FIRST_COMPLETED)
+        for task in done:
+            task.result()
+    except (OSError, ValueError, RuntimeError, WebSocketDisconnect):
+        try:
+            await websocket.send_json({'state':'failed','error':'The SOL session could not continue. Check device access and try again.'})
+        except (RuntimeError, WebSocketDisconnect):
+            pass
+    finally:
+        worker.shutdown.set()
+        for task in tasks:
+            task.cancel()
+        with CancelScope(shield=True):
+            await asyncio.gather(*tasks,return_exceptions=True)
+            try:
+                await asyncio.to_thread(worker.stop)
+            finally:
+                WORKERS.pop(key,None)
+            try:
+                await websocket.close()
+            except (RuntimeError, WebSocketDisconnect):
+                pass
 
 app.mount('/assets',StaticFiles(directory=STATIC),name='assets')
 @app.get('/')

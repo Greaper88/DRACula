@@ -17,7 +17,7 @@ remain incomplete. See [release validation](release-validation.md) for test evid
 - Portable desktop packaging, updater and Windows/macOS/ARM validation.
 - Device certificate enrollment/pinning and a fuller deployment security review.
 - Additional reviewed controller/viewer versions and modular vendor adapters.
-- Redfish and IPMI SOL support.
+- Redfish support.
 - Higher-frame-rate browser video if needed.
 - Separately reviewed firmware, virtual media and maintenance workflows.
 

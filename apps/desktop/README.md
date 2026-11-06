@@ -7,12 +7,12 @@ installed separately.
 
 ## Download and launch
 
-Download [DRACula-0.1.3.jar](https://github.com/Greaper88/DRACula/releases/download/v0.1.3/DRACula-0.1.3.jar)
-from the [release page](https://github.com/Greaper88/DRACula/releases/tag/v0.1.3).
+Download [DRACula-0.1.4.jar](https://github.com/Greaper88/DRACula/releases/download/v0.1.4/DRACula-0.1.4.jar)
+from the [release page](https://github.com/Greaper88/DRACula/releases/tag/v0.1.4).
 Double-click it if JAR files are associated with Java, or run:
 
 ```sh
-java -jar DRACula-0.1.3.jar
+java -jar DRACula-0.1.4.jar
 ```
 
 First setup requires HTTPS access to GitHub's official standalone-Python release.
@@ -80,7 +80,7 @@ Commons dependencies from Maven Central. Build with:
 ./apps/desktop/build.sh
 ```
 
-The output is `dist/DRACula-0.1.3.jar`. It embeds Java dependencies with their
+The output is `dist/DRACula-0.1.4.jar`. It embeds Java dependencies with their
 upstream notices, shared Python source and launcher support files, with no device
 credentials, runtime binaries or Dell viewer.
 
@@ -144,6 +144,11 @@ retries. Healthy video remains independent of HTTP status-login expiry.
 Keyboard/mouse input starts off. Enable it through **Input → Keyboard and mouse**;
 **Ctrl+Alt+Shift** releases capture. Native viewer menus retain their own behavior
 and confirmations. A blanked remote screen is not automatically woken.
+
+**Open SOL** opens an IPMI serial terminal on supported controllers with SOL
+enabled. The desktop backend needs `ipmitool` on PATH and a POSIX terminal host.
+The terminal starts in view-only mode. Enable keyboard input in the window when
+you are ready to type. Close it to release the session.
 
 **Light mode / Dark mode** beside the app title switches the manager and its
 dialogs immediately and remembers the choice. Pending edits survive a theme

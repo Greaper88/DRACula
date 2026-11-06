@@ -11,7 +11,7 @@ DRACULA_BUILD_NEEDED=0
 if [ ! -f "$DRACULA_ROOT/.local/desktop/dracula-manager.jar" ]; then
   DRACULA_BUILD_NEEDED=1
 else
-  for DRACULA_SOURCE in "$DRACULA_ROOT"/apps/desktop/java/dracula/*.java "$DRACULA_ROOT/apps/desktop/build.sh" "$DRACULA_ROOT/LICENSE" "$DRACULA_ROOT/NOTICE" "$DRACULA_ROOT/THIRD_PARTY_NOTICES.md"; do
+  for DRACULA_SOURCE in "$DRACULA_ROOT"/apps/desktop/java/dracula/*.java "$DRACULA_ROOT/apps/desktop/build.sh" "$DRACULA_ROOT/scripts/build-desktop.py" "$DRACULA_ROOT/apps/desktop/bootstrap/python-dependencies.json" "$DRACULA_ROOT/LICENSE" "$DRACULA_ROOT/NOTICE" "$DRACULA_ROOT/THIRD_PARTY_NOTICES.md" "$DRACULA_ROOT/licenses/GPL-3.0.txt"; do
     if [ "$DRACULA_SOURCE" -nt "$DRACULA_ROOT/.local/desktop/dracula-manager.jar" ]; then DRACULA_BUILD_NEEDED=1; fi
   done
 fi

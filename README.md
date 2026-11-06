@@ -1,9 +1,10 @@
-# DRACula
+# DRACula — Dell DRAC 5 KVM and IPMI management
 
-A desktop and web manager for homelab management controllers, starting with Dell
-DRAC 5 and standard IPMI. Both apps use the same Python management core.
+Manage Dell DRAC 5 and IPMI controllers from your browser or desktop. DRACula
+opens the legacy KVM console and IPMI Serial over LAN (SOL), reads hardware
+status, and provides reviewed settings and power controls.
 
-**0.1.3 is an early public preview.** Docker supports Linux AMD64. The desktop
+**0.1.4 is an early public preview.** Docker supports Linux AMD64. The desktop
 ships as one executable JAR with automatic backend setup; hardware validation
 currently covers Linux x86-64.
 
@@ -16,21 +17,22 @@ currently covers Linux x86-64.
 - Legacy Java KVM in a desktop window or a browser stream, with automatic recovery
   using saved credentials and a fresh JNLP after a disconnect.
 - Optional keyboard/mouse control, initially off; reconnecting turns input off.
+- IPMI Serial over LAN in both apps with an explicit keyboard input switch.
 - Dark and light themes in both apps. The browser console fits the available space.
 
 IPMI-only devices show the supported status and power pages. DRAC KVM and vendor
-configuration are hidden when unavailable. Redfish, IPMI SOL, firmware flashing,
+configuration are hidden when unavailable. Redfish, firmware flashing,
 virtual-media mounting, log clearing and controller resets are not implemented.
 
 ## Web app: published Docker image
 
-Image: **`ghcr.io/greaper88/dracula:0.1.3`** ([package](https://github.com/Greaper88/DRACula/pkgs/container/dracula)).
+Image: **`ghcr.io/greaper88/dracula:0.1.4`** ([package](https://github.com/Greaper88/DRACula/pkgs/container/dracula)).
 Linux AMD64 is supported. Copy this into `compose.yaml`:
 
 ```yaml
 services:
   dracula:
-    image: ghcr.io/greaper88/dracula:0.1.3
+    image: ghcr.io/greaper88/dracula:0.1.4
     platform: linux/amd64
     init: true
     ports:
@@ -72,13 +74,13 @@ A saved profile never connects automatically.
 
 ## Desktop app: one executable JAR
 
-Download **[DRACula-0.1.3.jar](https://github.com/Greaper88/DRACula/releases/download/v0.1.3/DRACula-0.1.3.jar)**
-from [Releases](https://github.com/Greaper88/DRACula/releases/tag/v0.1.3).
+Download **[DRACula-0.1.4.jar](https://github.com/Greaper88/DRACula/releases/download/v0.1.4/DRACula-0.1.4.jar)**
+from [Releases](https://github.com/Greaper88/DRACula/releases/tag/v0.1.4).
 Install Java 17 or newer, then double-click the JAR where your OS associates JAR
 files with Java. The equivalent command is:
 
 ```sh
-java -jar DRACula-0.1.3.jar
+java -jar DRACula-0.1.4.jar
 ```
 
 No source checkout or separate Python installation is needed. First launch
@@ -104,6 +106,12 @@ Console input starts disabled. Enable it explicitly to control a machine;
 **Ctrl+Alt+Shift** releases capture. Closing the console stops its worker and
 reconnect attempts. A healthy KVM connection survives DRAC web-login expiry.
 
+**Open SOL** appears next to KVM when the selected controller reports enabled
+Serial over LAN over encrypted IPMI 2.0. It opens the server's serial terminal
+with keyboard input off. Set up BIOS serial redirection to the controller for
+firmware output. For an operating system login, the OS must also use that serial
+port. Closing the terminal releases the session opened by DRACula.
+
 Use a trusted management network. Device-side DRAC 5 compatibility uses obsolete
 TLS and does not verify the controller certificate. It is confined to private
 workers and never applied to browser-facing TLS. See [security notes](SECURITY.md).
@@ -122,6 +130,7 @@ Node server. See [release validation](docs/release-validation.md) for build chec
 and [runtime notices](apps/web/THIRD_PARTY.md) for third-party distribution details.
 
 - [Architecture](docs/architecture.md)
+- [Dell DRAC 5 KVM and Serial over LAN setup on a PowerEdge 1950](docs/drac5-kvm-sol.md)
 - [DRAC 5 field mapping](docs/drac5-fields.md)
 - [Changelog](CHANGELOG.md)
 - [Roadmap](docs/roadmap.md)
@@ -132,3 +141,13 @@ DRACula's original code and documentation use the [Apache License 2.0](LICENSE).
 See [NOTICE](NOTICE), [third-party notices](THIRD_PARTY_NOTICES.md) and
 [contributing guidance](CONTRIBUTING.md). AI-assisted contributions require the
 disclosure format in [AGENTS.md](AGENTS.md).
+
+## Trademarks and affiliation
+
+DRACula is an independent, open-source project. “DRAC” refers to Dell Remote
+Access Controller and is used in the project name to identify hardware the
+software is designed to work with. DRACula is not affiliated with, endorsed by,
+or sponsored by Dell Technologies.
+
+Dell Technologies, Dell, and other Dell trademarks are trademarks of Dell Inc.
+or its subsidiaries.

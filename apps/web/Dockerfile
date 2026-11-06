@@ -1,7 +1,7 @@
 FROM python:3.12-slim-bookworm
 ARG BUNDLE_JAVA=false
 LABEL org.opencontainers.image.title="DRACula" \
-      org.opencontainers.image.version="0.1.3" \
+      org.opencontainers.image.version="0.1.4" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.source="https://github.com/Greaper88/DRACula" \
       org.opencontainers.image.description="DRAC 5 and IPMI management with confirmed actions and isolated legacy KVM"
@@ -17,6 +17,7 @@ COPY src /app/src
 COPY launcher /app/launcher
 COPY apps/web/static /app/apps/web/static
 COPY LICENSE NOTICE THIRD_PARTY_NOTICES.md /usr/share/doc/dracula/
+COPY licenses/GPL-3.0.txt /usr/share/doc/dracula/licenses/
 COPY apps/web/THIRD_PARTY.md /usr/share/doc/dracula/RUNTIME_NOTICES.md
 ENV PYTHONPATH=/app/src PYTHONUNBUFFERED=1 DRACULA_DATA=/data DRACULA_KEYS=/keys HOME=/tmp
 RUN useradd --uid 1000 --create-home app && mkdir -p /app/.local /data /keys \

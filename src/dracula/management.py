@@ -11,6 +11,7 @@ from .ipmi import IpmiAdapter
 from .power import Drac5Power,PowerController
 from .status import BY_KEY,fetch_page,FieldRow
 from .ipmi import READS
+from .sol import available as sol_available
 
 class ManagementSession:
     def __init__(self,device,user,password):
@@ -23,8 +24,16 @@ class ManagementSession:
         self.editor=ConfigEditor(device)
         self.power=PowerController(device.host,Drac5Power(device) if self.http_ready else None,self.ipmi)
         self.power_model=None;self._ipmi_pages=None
+        self._sol_access=None
+        self._sol_checked=False
+    def sol_access(self):
+        if not self._sol_checked:
+            self._sol_access=self.ipmi.sol_access() if sol_available() else None
+            self._sol_checked=True
+        return self._sol_access
     def capabilities(self):
-        if self.http_ready:return {'pages':list(BY_KEY),'kvm':True,'settings':True,'source':'DRAC HTTP','sol':False}
+        sol=bool(self.sol_access())
+        if self.http_ready:return {'pages':list(BY_KEY),'kvm':True,'settings':True,'source':'DRAC HTTP','sol':sol}
         if self._ipmi_pages is None:
             self._ipmi_pages=['power']
             for key in READS:
@@ -33,7 +42,7 @@ class ManagementSession:
                     rows,errors=self.ipmi.page(key)
                     if rows and not errors:self._ipmi_pages.append(key)
                 except Exception:pass
-        return {'pages':self._ipmi_pages,'kvm':False,'settings':False,'source':'IPMI','sol':False}
+        return {'pages':self._ipmi_pages,'kvm':False,'settings':False,'source':'IPMI','sol':sol}
     def page(self,key):
         self.power_model=None
         if key=='power':

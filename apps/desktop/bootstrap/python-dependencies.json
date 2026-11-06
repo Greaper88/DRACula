@@ -1,0 +1,12 @@
+[
+  {
+    "name": "pyte-0.8.2-py3-none-any.whl",
+    "url": "https://files.pythonhosted.org/packages/59/d0/bb522283b90853afbf506cd5b71c650cf708829914efd0003d615cf426cd/pyte-0.8.2-py3-none-any.whl",
+    "sha256": "85db42a35798a5aafa96ac4d8da78b090b2c933248819157fc0e6f78876a0135"
+  },
+  {
+    "name": "wcwidth-0.2.14-py2.py3-none-any.whl",
+    "url": "https://files.pythonhosted.org/packages/af/b5/123f13c975e9f27ab9c0770f514345bd406d0e8d3b7a0723af9d43f710af/wcwidth-0.2.14-py2.py3-none-any.whl",
+    "sha256": "a7bb560c8aee30f9957e5f9895805edd20602f2d7f720186dfd906e82b4982e1"
+  }
+]

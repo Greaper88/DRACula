@@ -31,13 +31,16 @@ public final class Manager extends JFrame {
     final JLabel banner=new JLabel("Select a machine and connect"), status=new JLabel("Disconnected"), mode=new JLabel("READ-ONLY ACCESS   ·   DRAC 5");
     final JButton theme=new JButton(DesktopTheme.action());
     final JButton connect=new JButton("Connect"), refresh=new JButton("Refresh tab"), console=new JButton("Open KVM window");
+    final JButton sol=new JButton("Open SOL");
     final JTextField search=new JTextField();
     volatile Bridge bridge;
     volatile int generation=0;
     char[] password=new char[0];
     String username="root",connectedHost="";
     boolean rebuilding=false,kvmSupported=false;
+    boolean solSupported=false;
     ConsoleStatusDialog consoleStatus;
+    SolDialog solDialog;
     final Set<Process> consoles=Collections.synchronizedSet(new HashSet<>());
 
     Manager() {
@@ -65,12 +68,15 @@ public final class Manager extends JFrame {
         JPanel top=new JPanel(new BorderLayout(8,10));top.setOpaque(false);
         banner.setFont(new Font(Font.SANS_SERIF,Font.BOLD,19));DesktopTheme.style(banner,"ink");top.add(banner,BorderLayout.NORTH);
         JPanel buttons=new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));buttons.setOpaque(false);
-        buttons.add(connect);buttons.add(refresh);buttons.add(console);buttons.add(new JLabel("Filter:"));search.setColumns(17);buttons.add(search);top.add(buttons,BorderLayout.SOUTH);
+        buttons.add(connect);buttons.add(refresh);buttons.add(console);buttons.add(sol);buttons.add(new JLabel("Filter:"));search.setColumns(17);buttons.add(search);top.add(buttons,BorderLayout.SOUTH);
         content.add(top,BorderLayout.NORTH);content.add(sections,BorderLayout.CENTER);
         JSplitPane split=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,side,content);split.setBorder(null);split.setDividerSize(8);split.setResizeWeight(0);split.setOpaque(false);layout.add(split,BorderLayout.CENTER);
-        DesktopTheme.style(status,"muted");layout.add(status,BorderLayout.SOUTH);
+        JPanel footer=new JPanel(new BorderLayout(12,0));footer.setOpaque(false);
+        DesktopTheme.style(status,"muted");footer.add(status,BorderLayout.CENTER);
+        JButton about=new JButton("About");about.addActionListener(e->new AboutDialog(this).setVisible(true));footer.add(about,BorderLayout.EAST);layout.add(footer,BorderLayout.SOUTH);
         connect.addActionListener(e->{if(bridge==null)connectDialog();else disconnect();});
         refresh.addActionListener(e->loadSelected(true));console.addActionListener(e->openConsole());
+        sol.addActionListener(e->openSol());
         sections.addChangeListener(e->loadSelected(false));
         search.getDocument().addDocumentListener(new DocumentListener(){public void insertUpdate(DocumentEvent e){filter();}public void removeUpdate(DocumentEvent e){filter();}public void changedUpdate(DocumentEvent e){filter();}});
         machineList.addListSelectionListener(e->{if(!e.getValueIsAdjusting()&&!syncingDevices){syncingDevices=true;deviceSelector.setSelectedItem(machineList.getSelectedValue());syncingDevices=false;disconnect();DeviceStore.Profile selected=devices.profiles.get(machineList.getSelectedValue());banner.setText(selected==null?"Select a machine":selected.toString());}});
@@ -80,7 +86,7 @@ public final class Manager extends JFrame {
         placeholder();availability(false);DesktopTheme.applyTree(this);
     }
     void placeholder(){sections.removeAll();JLabel empty=new JLabel("Connect to load the machine’s DRAC tabs and current status.",SwingConstants.CENTER);DesktopTheme.style(empty,"muted");sections.addTab("Overview",empty);}
-    void availability(boolean on){refresh.setEnabled(on);console.setEnabled(on&&kvmSupported);console.setVisible(on&&kvmSupported);connect.setText(on?"Disconnect":"Connect");}
+    void availability(boolean on){refresh.setEnabled(on);console.setEnabled(on&&kvmSupported);console.setVisible(on&&kvmSupported);sol.setVisible(on&&solSupported);sol.setEnabled(on&&solSupported);connect.setText(on?"Disconnect":"Connect");}
     static DeviceStore openStore(Path directory){try{return new DeviceStore(directory);}catch(IOException e){throw new IllegalStateException("Cannot open device profiles",e);}}
     void loadMachines(){reloadProfiles(machineList.getSelectedValue());}
     static boolean validHost(String text){String[] p=text.split("\\.",-1);if(p.length!=4)return false;try{for(String s:p)if(!s.matches("[0-9]{1,3}")||Integer.parseInt(s)>255||(s.length()>1&&s.startsWith("0")))return false;return true;}catch(NumberFormatException e){return false;}}
@@ -167,6 +173,7 @@ public final class Manager extends JFrame {
         if(settingsInProgress()){status.setText("Finish or cancel the settings review first.");return;}
         ++generation;Bridge old=bridge;bridge=null;mode.setText("READ-ONLY ACCESS · DRAC 5");
         if(consoleStatus!=null){consoleStatus.cancelled=true;consoleStatus.dispose();consoleStatus=null;}
+        if(solDialog!=null){solDialog.dispose();solDialog=null;}
         synchronized(consoles){for(Process process:consoles)process.destroy();}
         if(old!=null)old.close();Arrays.fill(password,'\0');password=new char[0];connectedHost="";
         rebuilding=true;pages.clear();placeholder();rebuilding=false;
@@ -194,10 +201,19 @@ public final class Manager extends JFrame {
         });
     }
     boolean settingsInProgress(){return pages.values().stream().anyMatch(panel->panel.busy);}
-    void settingsBusy(PagePanel panel,boolean busy){panel.setBusy(busy);boolean active=settingsInProgress();connect.setEnabled(!active);deviceSelector.setEnabled(!active);machineList.setEnabled(!active);}
+    void settingsBusy(PagePanel panel,boolean busy){panel.setBusy(busy);boolean active=settingsInProgress();connect.setEnabled(!active);deviceSelector.setEnabled(!active);machineList.setEnabled(!active);sol.setEnabled(bridge!=null&&solSupported&&!active);}
     void applyCapabilities(List<Record> records){
         Set<String> supported=new HashSet<>();
-        for(Record r:records){if(r.kind.equals("CAPABILITY")&&r.fields.length==1)supported.add(r.fields[0]);if(r.kind.equals("FEATURES")&&r.fields.length==3){kvmSupported=r.fields[0].equals("true")&&Boolean.parseBoolean(System.getProperty("dracula.kvm.supported","true"));console.setVisible(kvmSupported);console.setEnabled(bridge!=null&&kvmSupported);mode.setText(r.fields[2]+" · "+(r.fields[1].equals("true")?"CONFIRMED SETTINGS":"STATUS AND CONFIRMED POWER"));}}
+        for(Record r:records){
+            if(r.kind.equals("CAPABILITY")&&r.fields.length==1)supported.add(r.fields[0]);
+            if(r.kind.equals("FEATURES")&&r.fields.length>=3){
+                kvmSupported=r.fields[0].equals("true")&&Boolean.parseBoolean(System.getProperty("dracula.kvm.supported","true"));
+                solSupported=r.fields.length>=4&&r.fields[3].equals("true");
+                console.setVisible(kvmSupported);console.setEnabled(bridge!=null&&kvmSupported);
+                sol.setVisible(solSupported);sol.setEnabled(bridge!=null&&solSupported&&!settingsInProgress());
+                mode.setText(r.fields[2]+" · "+(r.fields[1].equals("true")?"CONFIRMED SETTINGS":"STATUS AND CONFIRMED POWER"));
+            }
+        }
         if(supported.isEmpty())return;
         rebuilding=true;
         for(int i=sections.getTabCount()-1;i>=0;i--){JTabbedPane group=(JTabbedPane)sections.getComponentAt(i);for(int j=group.getTabCount()-1;j>=0;j--){PagePanel p=(PagePanel)group.getComponentAt(j);if(!supported.contains(p.key)){group.removeTabAt(j);pages.remove(p.key);}}if(group.getTabCount()==0)sections.removeTabAt(i);}
@@ -237,6 +253,16 @@ public final class Manager extends JFrame {
             });
         }catch(Exception failure){SwingUtilities.invokeLater(()->{if(request==generation){settingsBusy(panel,false);panel.message.setText("Review failed · Nothing sent: "+failure.getMessage());}});}});
     }
+    void openSol(){
+        if(bridge==null||!solSupported||settingsInProgress())return;
+        if(solDialog!=null&&solDialog.isDisplayable()){
+            solDialog.toFront();
+            return;
+        }
+        solDialog=new SolDialog(this,connectedHost);
+        solDialog.start(python(root,"--sol"),connectedHost,username,password.clone());
+        solDialog.setVisible(true);
+    }
     void openConsole(){
         if(bridge==null)return;int request=generation;String host=connectedHost,user=username;char[] auth=password.clone();console.setEnabled(false);status.setText("Opening KVM window…");
         if(consoleStatus!=null)consoleStatus.dispose();
@@ -268,6 +294,7 @@ public final class Manager extends JFrame {
         List<String> cmd=new ArrayList<>(List.of(System.getProperty("dracula.python","python3"),"-m","dracula.manager_bridge"));cmd.addAll(List.of(flags));
         ProcessBuilder b=new ProcessBuilder(cmd);b.directory(root.toFile());b.redirectErrorStream(true);b.environment().put("PYTHONPATH",root.resolve("src").toString());
         if(Boolean.getBoolean("dracula.portable")){b.environment().remove("PYTHONHOME");b.environment().put("PYTHONNOUSERSITE","1");b.environment().put("DRACULA_HTTP_TRANSPORT","stdlib");b.environment().put("DRACULA_CACHE",System.getProperty("dracula.state"));b.environment().put("DRACULA_AUTO_JAVA","1");}
+        else b.environment().put("PYTHONPATH",root.resolve("src")+File.pathSeparator+root.resolve(".local/desktop/python-deps"));
         return b;
     }
     static String enc(String text){return Base64.getEncoder().encodeToString(text.getBytes(StandardCharsets.UTF_8));}

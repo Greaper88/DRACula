@@ -19,6 +19,65 @@ def read_field():
     if not line or not line.endswith('\n'):raise ValueError('Invalid bridge input')
     return base64.b64decode(line.strip(),validate=True).decode()
 
+def desktop_sol(host,user,password):
+    import select
+    import threading
+    import time
+    from .ipmi import IpmiAdapter
+    from .sol import SolSession, available
+
+    adapter=IpmiAdapter(host,user,password)
+    worker=SolSession(host,'desktop')
+    try:
+        access=adapter.sol_access() if available() else None
+        if not access:
+            raise RuntimeError('SOL is unavailable with these credentials.')
+        worker.start(adapter,access)
+
+        def receive():
+            pending=b''
+            try:
+                while not worker.shutdown.is_set() and not worker.done.is_set():
+                    if not select.select([sys.stdin],[],[],.2)[0]:
+                        continue
+                    chunk=os.read(sys.stdin.fileno(),4096)
+                    if not chunk:
+                        return
+                    pending+=chunk
+                    while b'\n' in pending:
+                        line, _, pending=pending.partition(b'\n')
+                        if len(line)>4096:
+                            raise ValueError('Invalid SOL message')
+                        command, _, data=line.partition(b'\t')
+                        if command==b'QUIT' and not data:
+                            return
+                        if command in (b'ENABLE',b'DISABLE') and not data:
+                            worker.message({'type':'enable','enabled':command==b'ENABLE'})
+                        elif command==b'INPUT':
+                            worker.message({'type':'input','data':base64.b64decode(data,validate=True).decode()})
+                        else:
+                            raise ValueError('Invalid SOL message')
+                    if len(pending)>4096:
+                        raise ValueError('Invalid SOL message')
+            except (OSError,ValueError):
+                worker._end('failed','The SOL input channel stopped.')
+            finally:
+                worker.shutdown.set()
+
+        threading.Thread(target=receive,daemon=True).start()
+        previous=None
+        while True:
+            status=worker.snapshot()
+            if status!=previous:
+                emit('SOL',status['state'],str(status['input_enabled']).lower(),status['text'],status['error'])
+                previous=status
+            if status['state'] in ('closed','failed') or worker.shutdown.is_set():
+                break
+            time.sleep(.1)
+    finally:
+        worker.stop()
+        adapter.close()
+
 def main():
     os.umask(0o077);CACHE.mkdir(mode=0o700,exist_ok=True)
     device=None;editor=None;management=None
@@ -30,6 +89,9 @@ def main():
     signal.signal(signal.SIGTERM,terminate)
     try:
         host,user,password=read_field(),read_field(),read_field()
+        if sys.argv[1:]==['--sol']:
+            desktop_sol(host,user,password)
+            return
         if sys.argv[1:]==['--console-managed']:
             from .desktop_console import run
             run(host,user,password,lambda value:emit('CONSOLE',value),lambda info:emit('CONSOLE_META',info['state'],info['attempt'],info['retry_in']))
@@ -43,7 +105,7 @@ def main():
         del password
         editor=management.editor
         emit('READY',device.host)
-        capabilities=management.capabilities();emit('FEATURES',str(capabilities['kvm']).lower(),str(capabilities['settings']).lower(),capabilities['source'])
+        capabilities=management.capabilities();emit('FEATURES',str(capabilities['kvm']).lower(),str(capabilities['settings']).lower(),capabilities['source'],str(capabilities['sol']).lower())
         for page in PAGES:
             if page.key in capabilities['pages']:emit('PAGE',page.key,page.section,page.title,'; '.join(page.actions))
         emit('END')
@@ -75,7 +137,7 @@ def main():
                 emit('ERROR','Unknown read-only page');emit('END');continue
             page=BY_KEY[command[5:]]
             rows,errors=management.page(page.key)
-            caps=management.capabilities();emit('FEATURES',str(caps['kvm']).lower(),str(caps['settings']).lower(),caps['source'])
+            caps=management.capabilities();emit('FEATURES',str(caps['kvm']).lower(),str(caps['settings']).lower(),caps['source'],str(caps['sol']).lower())
             for key in caps['pages']:emit('CAPABILITY',key)
             if management.power_model:
                 p=management.power_model;emit('POWER',p['revision'],p['state'],p['source'])
